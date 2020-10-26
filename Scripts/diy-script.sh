@@ -96,7 +96,7 @@ mv2 mt76.mk package/kernel/mt76 Makefile
 # ExtraPackages svn mac80211 https://github.com/openwrt/openwrt/trunk/package/kernel
 # rm -rf package/kernel/mac80211 && mv -f package/lean/mac80211 package/kernel
 
-ExtraPackages git luci-app-autoupdate https://github.com/Hyy2001X main
+# ExtraPackages git luci-app-autoupdate https://github.com/Hyy2001X main
 ExtraPackages git luci-theme-argon https://github.com/jerrykuku 18.06
 # ExtraPackages git luci-app-adguardhome https://github.com/Hyy2001X master
 ExtraPackages svn luci-app-smartdns https://github.com/project-openwrt/openwrt/trunk/package/ntlf9t
@@ -112,6 +112,12 @@ ExtraPackages svn smartdns https://github.com/project-openwrt/openwrt/trunk/pack
 # ExtraPackages svn luci-app-adguardhome https://github.com/Lienol/openwrt/trunk/package/diy
 # ExtraPackages git luci-app-adguardhome https://github.com/rufengsuixing master
 # ExtraPackages git openwrt-OpenAppFilter https://github.com/Lienol master
+
+echo '下载AdGuard Home'
+git clone https://github.com/rufengsuixing/luci-app-adguardhome ../diy/luci-app-adguardhome
+
+echo '集成diy目录'
+ln -s ../../diy ./package/openwrt-packages
 }
 
 # Diy-Part2() {
