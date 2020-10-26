@@ -29,6 +29,7 @@ env:
   REPO_BRANCH: master
   CONFIG_FILE: .config
   CUSTOM_SCRIPT: ./Scripts/diy-script.sh
+  DIY_P1_SH: ./Scripts/diy-part1.sh
   TZ: Asia/Shanghai
   UPLOAD_RELEASE: true
   UPLOAD_FIRMWARE: true
@@ -58,6 +59,13 @@ jobs:
       run: |
         git clone -b $REPO_BRANCH $REPO_URL openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        
+    - name: Load custom feeds
+      run: |
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF lede/feeds.conf.default
+        chmod +x $DIY_P1_SH
+        cd lede
+        ../$DIY_P1_SH
 
     - name: Run Diy-Part1 Scripts
       run: |
@@ -83,6 +91,10 @@ jobs:
         make defconfig
         make download -j$(nproc) V=s
         find dl -size -1024c -exec rm -f {} \;
+        
+    - name: Add Custom Settings
+      run: |
+        cp -rf settings/* ./openwrt/
 
     - name: Compile the Openwrt
       run: |
