@@ -122,6 +122,8 @@ ExtraPackages svn smartdns https://github.com/project-openwrt/openwrt/trunk/pack
 }
 
 Diy-Part2() {
+GET_TARGET_INFO
+echo "Author: $Author"
 # GET_TARGET_INFO
 # mv2 mwan3 package/feeds/packages/mwan3/files/etc/config
 # echo "Author: $Author"
