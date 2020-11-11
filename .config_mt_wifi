@@ -22,14 +22,14 @@ CONFIG_PACKAGE_automount=y
 CONFIG_PACKAGE_ipv6helper=y
 CONFIG_PACKAGE_luci-ssl-openssl=y
 CONFIG_PACKAGE_luci-theme-argon=y
-CONFIG_PACKAGE_luci-app-adbyby-plus=y
+# CONFIG_PACKAGE_luci-app-adbyby-plus is not set
 CONFIG_PACKAGE_luci-app-adguardhome=y
 CONFIG_PACKAGE_luci-app-argon-config=y
 #CONFIG_PACKAGE_luci-app-autoupdate is not set
 #CONFIG_PACKAGE_luci-app-aria2 is not set
 CONFIG_PACKAGE_luci-app-ddns=y
 # CONFIG_PACKAGE_luci-app-frpc is not set
-CONFIG_PACKAGE_luci-app-hd-idle=y
+# CONFIG_PACKAGE_luci-app-hd-idle is not set
 # CONFIG_PACKAGE_luci-app-mwan3 is not set
 # CONFIG_PACKAGE_luci-app-openclash is not set
 CONFIG_PACKAGE_luci-app-qos=y
@@ -43,18 +43,18 @@ CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Server=y
 #CONFIG_PACKAGE_luci-app-serverchan  is not set
 CONFIG_PACKAGE_luci-app-socat=y
 CONFIG_PACKAGE_luci-app-syncdial=y
-CONFIG_PACKAGE_luci-app-ttyd=y
-CONFIG_PACKAGE_luci-app-unblockmusic=y
+# CONFIG_PACKAGE_luci-app-ttyd is not set
+# CONFIG_PACKAGE_luci-app-unblockmusic is not set
 CONFIG_PACKAGE_luci-app-vsftpd=y
 CONFIG_PACKAGE_luci-app-zerotier=y
 CONFIG_PACKAGE_6rd=y
 CONFIG_PACKAGE_6to4=y
 CONFIG_PACKAGE_ariang=y
 CONFIG_PACKAGE_curl=y
-CONFIG_PACKAGE_ddns-scripts_aliyun=y
+# CONFIG_PACKAGE_ddns-scripts_aliyun is not set
 CONFIG_PACKAGE_ddns-scripts_cloudflare.com-v4=y
-CONFIG_PACKAGE_ddns-scripts_dnspod=y
-CONFIG_PACKAGE_ddns-scripts_no-ip_com=y
+# CONFIG_PACKAGE_ddns-scripts_dnspod is not set
+# CONFIG_PACKAGE_ddns-scripts_no-ip_com is not set
 CONFIG_PACKAGE_exfat-mkfs=y
 CONFIG_PACKAGE_usbutils=y
 CONFIG_PACKAGE_libudev-fbsd=y
@@ -62,7 +62,7 @@ CONFIG_PACKAGE_libudev-fbsd=y
 CONFIG_PACKAGE_wget=y
 CONFIG_PACKAGE_xz=y
 CONFIG_PACKAGE_xz-utils=y
-CONFIG_UnblockNeteaseMusic_Go=y
+# CONFIG_UnblockNeteaseMusic_Go is not set
 
 CONFIG_PACKAGE_luci-app-passwall=y
 
