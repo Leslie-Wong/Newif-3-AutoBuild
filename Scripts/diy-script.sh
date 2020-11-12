@@ -86,11 +86,6 @@ Diy-Part1() {
 [ -f feeds.conf.default ] && sed -i "s/#src-git helloworld/src-git helloworld/g" feeds.conf.default
 [ ! -d ./package/lean ] && mkdir ./package/lean
 
-echo '修改默认主题'
-sed -i 's/config internal themes/config internal themes\n    option Argon  \"\/luci-static\/argon\"/g' feeds/luci/modules/luci-base/root/etc/config/luci
-
-echo '去除默认bootstrap主题'
-sed -i '/set luci.main.mediaurlbase=\/luci-static\/bootstrap/d' feeds/luci/themes/luci-theme-bootstrap/root/etc/uci-defaults/30_luci-theme-bootstrap
 
 # mv2 feeds.conf.default
 mv2 mac80211.sh package/kernel/mac80211/files/lib/wifi
@@ -130,6 +125,10 @@ ExtraPackages svn luci-app-socat https://github.com/xiaorouji/openwrt-package/tr
 Diy-Part2() {
 GET_TARGET_INFO
 echo "Author: $Author"
+echo '修改默认主题'
+sed -i 's/config internal themes/config internal themes\n    option Argon  \"\/luci-static\/argon\"/g' $GITHUB_WORKSPACE/openwrt/feeds/luci/modules/luci-base/root/etc/config/luci
+echo '去除默认bootstrap主题'
+sed -i '/set luci.main.mediaurlbase=\/luci-static\/bootstrap/d' $GITHUB_WORKSPACE/openwrt/feeds/luci/themes/luci-theme-bootstrap/root/etc/uci-defaults/30_luci-theme-bootstrap
 # mv2 mwan3 package/feeds/packages/mwan3/files/etc/config
 # echo "Author: $Author"
 # echo "Lede Version: $Openwrt_Version"
