@@ -7,7 +7,7 @@ Diy_Core() {
 Author=Les.W #Les
 Default_Device=d-team_newifi-d2
 
-AutoUpdate_Version=`awk 'NR==6' ./package/base-files/files/bin/AutoUpdate.sh | awk -F'[="]+' '/Version/{print $2}'`
+# AutoUpdate_Version=`awk 'NR==6' ./package/base-files/files/bin/AutoUpdate.sh | awk -F'[="]+' '/Version/{print $2}'`
 Compile_Date=`date +'%Y/%m/%d'`
 Compile_Time=`date +'%Y-%m-%d %H:%M:%S'`
 Default_File=./package/lean/default-settings/files/zzz-default-settings
