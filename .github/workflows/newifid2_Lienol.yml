@@ -25,8 +25,8 @@ on:
     types: [started]
 
 env:
-  REPO_URL: https://github.com/Lienol/openwrt
-  REPO_BRANCH: master
+  REPO_URL: https://github.com/Lienol/openwrt.git
+  REPO_BRANCH: 19.07
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
   CUSTOM_SCRIPT: ./Scripts/diy-script.sh
