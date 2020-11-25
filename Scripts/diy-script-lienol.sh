@@ -11,7 +11,7 @@ Default_Device=d-team_newifi-d2
 Compile_Date=`date +'%Y/%m/%d'`
 Compile_Time=`date +'%Y-%m-%d %H:%M:%S'`
 Default_File=./package/default-settings/files/zzz-default-settings
-Lede_Version=`egrep -o "R[0-9]+\.[0-9]+\.[0-9]+" $Default_File`
+Lede_Version=`egrep -o "[0-9]+\.[0-9]+\-SNAPSHOT+" $Default_File`
 Openwrt_Version="$Lede_Version-`date +%Y%m%d`"
 }
 
