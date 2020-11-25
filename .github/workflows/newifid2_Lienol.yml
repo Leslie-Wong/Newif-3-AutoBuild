@@ -1,0 +1,224 @@
+#=======================================================
+# Description: Build OpenWrt using GitHub Actions
+# https://github.com/Hyy2001X/AutoBuild-Actions
+# Lisence: MIT
+# Author: P3TERX
+# Modify: Hyy2001X
+#=======================================================
+
+name: AutoBuild OpenWrt Lienol
+
+on: 
+#  release:
+#    types: [published]
+
+#  push:
+#    branches:
+#      - main
+#    paths:
+#      - '.config'
+
+#  schedule:
+#    - cron: 0 8 * * 5
+  
+  watch:
+    types: [started]
+
+env:
+  REPO_URL: https://github.com/Lienol/openwrt
+  REPO_BRANCH: master
+  FEEDS_CONF: feeds.conf.default
+  CONFIG_FILE: .config
+  CUSTOM_SCRIPT: ./Scripts/diy-script.sh
+  DIY_P1_SH: ./Scripts/diy-part1.sh
+  TZ: Asia/Shanghai
+  UPLOAD_RELEASE: true
+  UPLOAD_FIRMWARE: true
+  UPLOAD_BIN_DIR: false
+  UPLOAD_COWTRANSFER: false
+  UPLOAD_WETRANSFER: false
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Initialization Environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install $(curl -fsSL git.io/depends-ubuntu-1804)
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+
+    - name: Clone Openwrt source code
+      run: |
+        git clone -b $REPO_BRANCH $REPO_URL openwrt
+        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+        
+    - name: Load custom feeds
+      run: |
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+        chmod +x $GITHUB_WORKSPACE/$DIY_P1_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P1_SH
+
+    - name: Run Diy-Part1 Scripts
+      run: |
+        chmod +x $CUSTOM_SCRIPT
+        cd openwrt
+        source $GITHUB_WORKSPACE/$CUSTOM_SCRIPT && Diy-Part1
+
+    - name: Update & Install Feeds
+      run: |
+        cd openwrt
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Run Diy-Part2 Scripts
+      run: |
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        cd openwrt
+        source $GITHUB_WORKSPACE/$CUSTOM_SCRIPT && Diy-Part2
+
+    - name: Download Packages
+      run: |
+        cd openwrt
+        make defconfig
+        make download -j$(nproc) V=s
+        find dl -size -1024c -exec rm -f {} \;
+        
+    - name: Add Custom Settings
+      run: |
+        cp -rf settings/* ./openwrt/
+
+    - name: Compile the Openwrt
+      run: |
+        cd openwrt
+        make -j$(nproc) || make -j1 V=s
+
+#    - name: Run Diy-Part3 Scripts
+#      run: |
+#        echo "## $(date +"%Y%m%d")-AutoBuild" > update_log.txt
+#        cd openwrt
+#        source $GITHUB_WORKSPACE/$CUSTOM_SCRIPT && Diy-Part3
+#        echo "Artifacts_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+
+#    - name: Upload Firmware to Artifacts
+#      uses: actions/upload-artifact@main
+#      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+#      with:
+#        name: OpenWrt_Firmware_${{ env.Artifacts_DATE }}
+#        path: openwrt/bin/Firmware
+        
+#    - name: Upload Firmware directory to Artifacts
+#      uses: actions/upload-artifact@main
+#      if: env.UPLOAD_BIN_DIR == 'true' && !cancelled()
+#      with:
+#        name: OpenWrt_bin_${{ env.Artifacts_DATE }}
+#        path: openwrt/bin
+
+#    - name: Upload Firmware to Releases
+#      uses: softprops/action-gh-release@v1
+#      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+#      env:
+#        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+#      with:
+#        tag_name: AutoUpdate
+#        body_path: update_log.txt
+#        files: openwrt/bin/Firmware/*
+
+#     - name: Remove old Artifacts
+#       uses: c-hive/gha-remove-artifacts@v1
+#       with:
+#         age: '1 day'
+#         skip-recent: 3
+
+    - name: Check space usage
+      if: (!cancelled())
+      run: df -hT
+
+    - name: Upload bin directory
+      uses: actions/upload-artifact@main
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      with:
+        name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        path: openwrt/bin
+
+    - name: Organize files
+      id: organize
+      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      run: |
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "::set-output name=status::success"
+        
+    - name: Upload firmware directory
+      uses: actions/upload-artifact@main
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: Newifi_3_d
+        path: openwrt/bin
+        #name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        #path: ${{ env.FIRMWARE }}
+
+    - name: Upload firmware to cowtransfer
+      id: cowtransfer
+      if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
+      run: |
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer cow --block 2621440 -s -p 64 --no-progress ${FIRMWARE} 2>&1 | tee cowtransfer.log
+        echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
+        echo "::set-output name=url::$(cat cowtransfer.log | grep https | cut -f3 -d" ")"
+        
+    - name: Upload firmware to WeTransfer
+      id: wetransfer
+      if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
+      run: |
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer wet -s -p 16 --no-progress ${FIRMWARE} 2>&1 | tee wetransfer.log
+        echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
+        echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
+        
+    - name: Generate release tag
+      id: tag
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      run: |
+        echo "::set-output name=release_tag::Lienol_$(date +"%Y.%m.%d-%H%M")"
+        touch release.txt
+        [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
+        [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
+        echo "::set-output name=status::success"
+        
+    - name: Upload firmware to release
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag.outputs.release_tag }}
+        body_path: release.txt
+        files: ${{ env.FIRMWARE }}/*
+
+    - name: Remove old Artifacts
+      uses: c-hive/gha-remove-artifacts@v1.2.0
+      with:
+        age: '1 day'
+        skip-recent: 3
+
+    - name: Remove old Releases
+      uses: dev-drprasad/delete-older-releases@v0.1.0
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      with:
+        keep_latest: 3
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
