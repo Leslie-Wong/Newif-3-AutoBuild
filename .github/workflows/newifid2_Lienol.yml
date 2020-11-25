@@ -29,7 +29,7 @@ env:
   REPO_BRANCH: 19.07
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
-  CUSTOM_SCRIPT: ./Scripts/diy-script.sh
+  CUSTOM_SCRIPT: ./Scripts/diy-script-lienol.sh
   DIY_P1_SH: ./Scripts/diy-part1.sh
   TZ: Asia/Shanghai
   UPLOAD_RELEASE: true
