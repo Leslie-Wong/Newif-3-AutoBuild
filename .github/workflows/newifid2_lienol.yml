@@ -30,7 +30,7 @@ env:
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config_lienol
   CUSTOM_SCRIPT: ./Scripts/diy-script-lienol.sh
-  DIY_P1_SH: ./Scripts/diy-part1.sh
+  DIY_P1_SH: ./Scripts/diy-part1-lienol.sh
   TZ: Asia/Shanghai
   UPLOAD_RELEASE: true
   UPLOAD_FIRMWARE: true
