@@ -50,9 +50,9 @@ echo "Author: $Author"
 echo "Openwrt Version: $Openwrt_Version"
 # echo "AutoUpdate Version: $AutoUpdate_Version"
 echo "Router: $TARGET_PROFILE"
-sed -i "s?$Lede_Version?$Lede_Version Compiled by $Author [$Display_Date]?g" $Default_File
+sed -i "s/$Lede_Version/& Compiled by $Author [$Display_Date]/" $Default_File
 echo "$Openwrt_Version" > package/base-files/files/etc/openwrt_info
-sed -i "s?Openwrt?Openwrt $Openwrt_Version" package/base-files/files/etc/banner
+sed -i "s/Openwrt/& $Openwrt_Version" package/base-files/files/etc/banner
 }
 
 Diy-Part3() {
