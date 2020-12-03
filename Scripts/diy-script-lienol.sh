@@ -13,7 +13,7 @@ Diy-Part1() {
 [ ! -d package/lean ] && mkdir -p package/lean
 
 #Replace_File mac80211.sh package/kernel/mac80211/files/lib/wifi
-Replace_File uhttpd.config package/network/services/uhttpd/files/uhttpd.config
+Replace_File uhttpd.config package/network/services/uhttpd/files
 Replace_File system package/base-files/files/etc/config
 #Replace_File AutoUpdate.sh package/base-files/files/bin
 Replace_File banner package/base-files/files/etc
