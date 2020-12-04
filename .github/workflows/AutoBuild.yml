@@ -160,6 +160,11 @@ jobs:
         name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: openwrt/bin
 
+    - name: Zip files
+      run: |
+        cd openwrt
+        tar -zcvf Newifi_3_d.tar.gz bin
+        
     - name: Organize files
       id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
