@@ -181,7 +181,7 @@ jobs:
     - name: Zip files
       run: |
         cd openwrt
-        tar -zcvf Newifi_3_d.tar.gz openwrt/bin
+        tar -zcvf Newifi_3_d.tar.gz bin
 
     - name: Upload firmware to cowtransfer
       id: cowtransfer
