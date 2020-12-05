@@ -9,7 +9,7 @@ Default_Device=d-team_newifi-d2
 }
 
 Diy-Part1() {
-[ -e feeds.conf.default ] && sed -i "s/#src-git helloworld/src-git helloworld/g" feeds.conf.default
+[ -e feeds.conf.default ] && sed -i "s/#src-git helloworld/#src-git helloworld/g" feeds.conf.default
 [ ! -d package/lean ] && mkdir -p package/lean
 
 #Replace_File mac80211.sh package/kernel/mac80211/files/lib/wifi
