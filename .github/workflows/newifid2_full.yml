@@ -36,7 +36,7 @@ env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: .newifi3_d2_full.config
+  CONFIG_FILE: newifi3_d2_full.config
   CUSTOM_SCRIPT: ./Scripts/diy-script.sh
   DIY_P1_SH: ./Scripts/diy-part1.sh
   TZ: Asia/Shanghai
@@ -88,6 +88,7 @@ jobs:
         cd openwrt
         ./scripts/feeds update -a
         ./scripts/feeds install -a
+        
     - name: Run Diy-Part2 Scripts
       run: |
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
