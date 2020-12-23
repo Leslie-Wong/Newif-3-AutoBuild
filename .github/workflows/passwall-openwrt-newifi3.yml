@@ -40,8 +40,8 @@ env:
   REPO_BRANCH: 19.07
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: passwall-newifi3.config
-  DIY_P1_SH: ./Scripts/diy-script-lienol.sh
-  DIY_P2_SH: ./Scripts/diy-part1-lienol.sh
+  CUSTOM_SCRIPT: ./Scripts/diy-script-lienol.sh
+  DIY_P1_SH: ./Scripts/diy-part1-lienol.sh
   SSH_ACTIONS: false
   UPLOAD_BIN_DIR: true
   UPLOAD_RELEASE: true
