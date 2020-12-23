@@ -52,7 +52,7 @@ echo "Openwrt Version: $Openwrt_Version"
 echo "Router: $TARGET_PROFILE"
 sed -i "s?$Lede_Version?$Lede_Version Compiled by $Author [$Display_Date]?g" $Default_File
 echo "$Openwrt_Version" > package/base-files/files/etc/openwrt_info
-sed -i "s?Openwrt?Openwrt $Openwrt_Version / AutoUpdate $AutoUpdate_Version?g" package/base-files/files/etc/banner
+#sed -i "s?Openwrt?Openwrt $Openwrt_Version / AutoUpdate $AutoUpdate_Version?g" package/base-files/files/etc/banner
 }
 
 Diy-Part3() {
@@ -74,7 +74,7 @@ echo -e "\nMD5:$Firmware_MD5\nSHA256:$Firmware_SHA256" >> bin/Firmware/$AutoBuil
 GET_TARGET_INFO() {
 Diy_Core
 [ -e $GITHUB_WORKSPACE/Openwrt.info ] && . $GITHUB_WORKSPACE/Openwrt.info
-AutoUpdate_Version=$(awk 'NR==6' package/base-files/files/bin/AutoUpdate.sh | awk -F '[="]+' '/Version/{print $2}')
+#AutoUpdate_Version=$(awk 'NR==6' package/base-files/files/bin/AutoUpdate.sh | awk -F '[="]+' '/Version/{print $2}')
 Default_File="package/lean/default-settings/files/zzz-default-settings"
 Lede_Version=$(egrep -o "R[0-9]+\.[0-9]+\.[0-9]+" $Default_File)
 Openwrt_Version="$Lede_Version-$Compile_Date"
