@@ -147,9 +147,9 @@ jobs:
     - name: Zip files
       run: |
         cd openwrt
-        vm bin newifi-3-passwall${{ env.FILE_DATE }}
-        tar -zcvf Newifi-3-passwall${{ env.FILE_DATE }}.tar.gz bin
-        vm newifi-3-passwall${{ env.FILE_DATE }} bin
+        mv bin newifi-3-passwall${{ env.FILE_DATE }}
+        tar -zcvf Newifi-3-passwall${{ env.FILE_DATE }}.tar.gz newifi-3-passwall${{ env.FILE_DATE }}
+        mv newifi-3-passwall${{ env.FILE_DATE }} bin
 
     - name: Organize files
       id: organize
@@ -159,6 +159,7 @@ jobs:
         rm -rf packages
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "::set-output name=status::success"
+        
     - name: Upload firmware directory
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
