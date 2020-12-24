@@ -112,6 +112,8 @@ jobs:
       run: |
         cd openwrt
         make -j$(nproc) || make -j1 V=s
+        echo "FILE_DATE=_$(date +"%Y%m%d-%H%M%S")" >> $GITHUB_ENV
+
 #    - name: Run Diy-Part3 Scripts
 #      run: |
 #        echo "## $(date +"%Y%m%d")-AutoBuild" > update_log.txt
