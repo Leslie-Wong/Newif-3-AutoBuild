@@ -70,11 +70,6 @@ jobs:
       run: |
         git clone -b $REPO_BRANCH $REPO_URL openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-        echo "FILE_DATE=_$(date +'%Y%m%d_%H%M%S')" >> $GITHUB_ENV
-        echo "::set-env name=NAME_DATE::_$(date +'%Y%m%d_%H%M%S')"
-        echo "${{ env.FILE_DATE }}"
-        echo ${{ env.FILE_DATE }}
-        echo $NAME_DATE
         
     - name: Load custom feeds
       run: |
@@ -116,7 +111,8 @@ jobs:
       run: |
         cd openwrt
         make -j$(nproc) || make -j1 V=s
-
+        echo "FILE_DATE=_$(date +"%Y%m%d-%H%M%S")" >> $GITHUB_ENV
+        
 #    - name: Run Diy-Part3 Scripts
 #      run: |
 #        echo "## $(date +"%Y%m%d")-AutoBuild" > update_log.txt
