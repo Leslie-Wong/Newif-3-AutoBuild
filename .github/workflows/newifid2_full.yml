@@ -78,11 +78,13 @@ jobs:
         chmod +x $GITHUB_WORKSPACE/$DIY_P1_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
+        
     - name: Run Diy-Part1 Scripts
       run: |
         chmod +x $CUSTOM_SCRIPT
         cd openwrt
         source $GITHUB_WORKSPACE/$CUSTOM_SCRIPT && Diy-Part1
+        
     - name: Update & Install Feeds
       run: |
         cd openwrt
@@ -94,6 +96,7 @@ jobs:
         [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         cd openwrt
         source $GITHUB_WORKSPACE/$CUSTOM_SCRIPT && Diy-Part2
+        
     - name: Download Packages
       run: |
         cd openwrt
@@ -104,6 +107,7 @@ jobs:
     - name: Add Custom Settings
       run: |
         cp -rf settings/* ./openwrt/
+        
     - name: Compile the Openwrt
       run: |
         cd openwrt
@@ -152,9 +156,9 @@ jobs:
     - name: Zip files
       run: |
         cd openwrt
-        vm bin newifi-3-full${{ env.FILE_DATE }}
-        tar -zcvf Newifi-3-full${{ env.FILE_DATE }}.tar.gz bin
-        vm newifi-3-full${{ env.FILE_DATE }} bin
+        mv bin newifi-3-full${{ env.FILE_DATE }}
+        tar -zcvf Newifi-3-full${{ env.FILE_DATE }}.tar.gz newifi-3-full${{ env.FILE_DATE }}
+        mv newifi-3-full${{ env.FILE_DATE }} bin
 
     - name: Upload bin directory
       uses: actions/upload-artifact@main
