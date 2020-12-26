@@ -157,10 +157,12 @@ jobs:
       
     - name: Zip files
       run: |
-        cd openwrt
-        mv bin newifi-3-full${{ env.FILE_DATE }}
-        tar -zcvf Newifi-3-full${{ env.FILE_DATE }}.tar.gz newifi-3-full${{ env.FILE_DATE }}
-        mv newifi-3-full${{ env.FILE_DATE }} bin
+        cd openwrt/bin
+        mkdir newifi3-full${{ env.FILE_DATE }}
+        tar -zcvf newifi3-full${{ env.FILE_DATE }}/packages.tar.gz packages
+        tar -zcvf newifi3-full${{ env.FILE_DATE }}/targets.tar.gz targets
+        cd newifi3-full${{ env.FILE_DATE }}
+        echo "UPLOADFILES=$PWD" >> $GITHUB_ENV
 
     - name: Upload bin directory
       uses: actions/upload-artifact@main
@@ -192,7 +194,7 @@ jobs:
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
       run: |
         curl -fsSL git.io/file-transfer | sh
-        ./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/newifi-3-full${{ env.FILE_DATE }}.tar.gz 2>&1 | tee cowtransfer.log
+        ./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/bin/newifi3-full${{ env.FILE_DATE }} 2>&1 | tee cowtransfer.log
         echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
         echo "::set-output name=url::$(cat cowtransfer.log | grep https | cut -f3 -d" ")"
         
@@ -201,7 +203,7 @@ jobs:
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
       run: |
         curl -fsSL git.io/file-transfer | sh
-        ./transfer wet -s -p 16 --no-progress openwrt/newifi-3-full${{ env.FILE_DATE }}.tar.gz 2>&1 | tee wetransfer.log
+        ./transfer wet -s -p 16 --no-progress ${UPLOADFILES} 2>&1 | tee wetransfer.log
         echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
         echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
         
