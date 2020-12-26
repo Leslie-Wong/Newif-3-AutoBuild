@@ -187,7 +187,7 @@ jobs:
         ls -hl
         echo ${FIRMWARE}
         curl -fsSL git.io/file-transfer | sh
-        #./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/newifi-3-AutoBuild${{ env.FILE_DATE }}.tar.gz 2>&1 | tee cowtransfer.log
+        #./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/newifi3${{ env.FILE_DATE }} 2>&1 | tee cowtransfer.log
         ./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/bin/newifi3${{ env.FILE_DATE }} 2>&1 | tee cowtransfer.log
         echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
         echo "::set-output name=url::$(cat cowtransfer.log | grep https | cut -f3 -d" ")"
@@ -198,7 +198,7 @@ jobs:
       run: |
         curl -fsSL git.io/file-transfer | sh
         ./transfer wet -s -p 16 --no-progress ${UPLOADFILES} 2>&1 | tee wetransfer.log
-        #./transfer wet -s -p 16 --no-progress openwrt/newifi-3-AutoBuild${{ UPLOADFILES }}.tar.gz 2>&1 | tee wetransfer.log
+        #./transfer wet -s -p 16 --no-progress openwrt/newifi-3-AutoBuild${{ env.FILE_DATE }}.tar.gz 2>&1 | tee wetransfer.log
         echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
         echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
         
