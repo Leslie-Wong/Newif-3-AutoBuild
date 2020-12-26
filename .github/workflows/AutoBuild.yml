@@ -202,7 +202,6 @@ jobs:
         echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
         
     - name: remove packages folder
-      id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
