@@ -111,7 +111,7 @@ jobs:
       run: |
         cd openwrt
         make -j$(nproc) || make -j1 V=s
-        echo "FILE_DATE=_$(date +"%Y%m%d-%H%M%S")" >> $GITHUB_ENV
+        echo "FILE_DATE=_$(date +"%Y%m%d_%H%M")" >> $GITHUB_ENV
         
 #    - name: Run Diy-Part3 Scripts
 #      run: |
@@ -173,11 +173,12 @@ jobs:
         
     - name: Zip files
       run: |
-        cd openwrt
-        mv bin newifi-3-AutoBuild${{ env.FILE_DATE }}
-        tar -zcvf Newifi-3-AutoBuild${{ env.FILE_DATE }}.tar.gz newifi-3-AutoBuild${{ env.FILE_DATE }}
-        mv newifi-3-AutoBuild${{ env.FILE_DATE }} bin
-        ls -lh
+        cd openwrt/bin
+        mkdir newifi3${{ env.FILE_DATE }}
+        tar -zcvf newifi3${{ env.FILE_DATE }}/packages.tar.gz packages
+        tar -zcvf newifi3${{ env.FILE_DATE }}/targets.tar.gz targets
+        cd newifi3${{ env.FILE_DATE }}
+        echo "UPLOADFILES=$PWD" >> $GITHUB_ENV
 
     - name: Upload firmware to cowtransfer
       id: cowtransfer
@@ -187,7 +188,7 @@ jobs:
         echo ${FIRMWARE}
         curl -fsSL git.io/file-transfer | sh
         #./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/newifi-3-AutoBuild${{ env.FILE_DATE }}.tar.gz 2>&1 | tee cowtransfer.log
-        ./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/bin 2>&1 | tee cowtransfer.log
+        ./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/bin/newifi3${{ env.FILE_DATE }} 2>&1 | tee cowtransfer.log
         echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
         echo "::set-output name=url::$(cat cowtransfer.log | grep https | cut -f3 -d" ")"
         
@@ -196,8 +197,8 @@ jobs:
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
       run: |
         curl -fsSL git.io/file-transfer | sh
-        ./transfer wet -s -p 16 --no-progress openwrt/bin 2>&1 | tee wetransfer.log
-        #./transfer wet -s -p 16 --no-progress openwrt/newifi-3-AutoBuild${{ env.FILE_DATE }}.tar.gz 2>&1 | tee wetransfer.log
+        ./transfer wet -s -p 16 --no-progress ${UPLOADFILES} 2>&1 | tee wetransfer.log
+        #./transfer wet -s -p 16 --no-progress openwrt/newifi-3-AutoBuild${{ UPLOADFILES }}.tar.gz 2>&1 | tee wetransfer.log
         echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
         echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
         
@@ -220,7 +221,7 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "::set-output name=release_tag::newifi-3-AutoBuild${{ env.FILE_DATE }}
+        echo "::set-output name=release_tag::newifi-3-AutoBuild${{ env.FILE_DATE }}"
         touch release.txt
         [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
         [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
