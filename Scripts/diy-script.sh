@@ -12,6 +12,10 @@ Diy-Part1() {
 [ -e feeds.conf.default ] && sed -i "s/#src-git helloworld/src-git helloworld/g" feeds.conf.default
 [ ! -d package/lean ] && mkdir -p package/lean
 
+Update_Makefile xray package/lean/xray
+Update_Makefile v2ray package/lean/v2ray
+Update_Makefile v2ray-plugin package/lean/v2ray-plugin
+
 Replace_File mac80211.sh package/kernel/mac80211/files/lib/wifi
 Replace_File system package/base-files/files/etc/config
 #Replace_File AutoUpdate.sh package/base-files/files/bin
@@ -20,7 +24,7 @@ Replace_File banner package/base-files/files/etc
 ExtraPackages svn network/services dnsmasq https://github.com/openwrt/openwrt/trunk/package/network/services
 ExtraPackages svn network/services dropbear https://github.com/openwrt/openwrt/trunk/package/network/services
 # ExtraPackages svn network/services ppp https://github.com/openwrt/openwrt/trunk/package/network/services
-ExtraPackages svn network/services hostapd https://github.com/openwrt/openwrt/trunk/package/network/services
+# ExtraPackages svn network/services hostapd https://github.com/openwrt/openwrt/trunk/package/network/services
 # ExtraPackages svn kernel mt76 https://github.com/openwrt/openwrt/trunk/package/kernel
 
 #ExtraPackages git lean luci-app-autoupdate https://github.com/Hyy2001X main
@@ -146,4 +150,34 @@ else
 		echo "[$(date "+%H:%M:%S")] Customize Folder [$FILE_NAME] is not detected,skip move ..."
 	fi
 fi
+}
+
+Update_Makefile() {
+	PKG_NAME="$1"
+	Makefile="$2/Makefile"
+	if [ -f "${Makefile}" ];then
+		PKG_URL_MAIN="$(grep "PKG_SOURCE_URL:=" ${Makefile} | cut -c17-100)"
+		_process1=${PKG_URL_MAIN##*com/}
+		_process2=${_process1%%/tar*}
+		api_URL="https://api.github.com/repos/${_process2}/releases"
+		PKG_DL_URL="https://codeload.github.com/${_process2}/tar.gz/v"
+		Offical_Version="$(curl -s ${api_URL} 2>/dev/null | grep 'tag_name' | egrep -o '[0-9].+[0-9.]+' | awk 'NR==1')"
+		Source_Version="$(grep "PKG_VERSION:=" ${Makefile} | cut -c14-20)"
+		Source_HASH="$(grep "PKG_HASH:=" ${Makefile} | cut -c11-100)"
+		echo -e "Current ${PKG_NAME} version: ${Source_Version}\nOffical ${PKG_NAME} version: ${Offical_Version}"
+		if [[ ! "${Source_Version}" == "${Offical_Version}" ]];then
+			echo -e "Updating package ${PKG_NAME} [${Source_Version}] to [${Offical_Version}] ..."
+			sed -i "s?PKG_VERSION:=${Source_Version}?PKG_VERSION:=${Offical_Version}?g" ${Makefile}
+			wget -q "${PKG_DL_URL}${Offical_Version}?" -O /tmp/tmp_file
+			if [[ $? == 0 ]];then
+				Offical_HASH=$(sha256sum /tmp/tmp_file | cut -d ' ' -f1)
+				sed -i "s?PKG_HASH:=${Source_HASH}?PKG_HASH:=${Offical_HASH}?g" ${Makefile}
+			else
+				echo "Update package [${PKG_NAME}] error,skip update ..."
+			fi
+		fi
+	else
+		echo "Package ${PKG_NAME} is not detected,skip update ..."
+	fi
+	unset _process1 _process2 Offical_Version
 }
