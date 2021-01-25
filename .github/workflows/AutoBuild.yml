@@ -37,7 +37,9 @@ env:
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
-  CUSTOM_SCRIPT: ./Scripts/diy-script.sh
+  ##CUSTOM_SCRIPT: ./Scripts/diy-script.sh
+  DIY_SCRIPT: Scripts/AutoBuild_DiyScript.sh
+  FUNCTION_SCRIPT: Scripts/AutoBuild_Function.sh
   DIY_P1_SH: ./Scripts/diy-part1.sh
   TZ: Asia/Shanghai
   UPLOAD_RELEASE: true
@@ -80,9 +82,11 @@ jobs:
 
     - name: Run Diy-Part1 Scripts
       run: |
-        chmod +x $CUSTOM_SCRIPT
+        chmod +x $DIY_SCRIPT
         cd openwrt
-        source $GITHUB_WORKSPACE/$CUSTOM_SCRIPT && Diy-Part1
+        source $GITHUB_WORKSPACE/$DIY_SCRIPT && Diy-Part1
+        echo "Compile_Date=$(date +%Y%m%d)" > $GITHUB_WORKSPACE/Openwrt.info
+        echo "Display_Date=$(date +'%Y/%m/%d')" >> $GITHUB_WORKSPACE/Openwrt.info
 
     - name: Update & Install Feeds
       run: |
@@ -92,9 +96,17 @@ jobs:
 
     - name: Run Diy-Part2 Scripts
       run: |
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        [ -f $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         cd openwrt
-        source $GITHUB_WORKSPACE/$CUSTOM_SCRIPT && Diy-Part2
+        source $GITHUB_WORKSPACE/$DIY_SCRIPT
+        source $GITHUB_WORKSPACE/$FUNCTION_SCRIPT && Diy-Part2
+    
+    - name: SSH connection to Actions
+      uses: P3TERX/ssh2actions@v1.0.0
+      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
+      env:
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
     - name: Download Packages
       run: |
