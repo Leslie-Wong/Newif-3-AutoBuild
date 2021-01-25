@@ -7,7 +7,7 @@ Diy_Core() {
 	Author=Hyy2001
 	Default_Device=d-team_newifi-d2
 
-	INCLUDE_AutoUpdate=true
+	INCLUDE_AutoUpdate=false
 	INCLUDE_AutoBuild_Tools=true
 	INCLUDE_SSR_Plus=true
 	INCLUDE_Passwall=false
@@ -32,17 +32,17 @@ Diy-Part1() {
 	ExtraPackages git lean helloworld https://github.com/fw876 master
 	ExtraPackages git lean luci-theme-argon https://github.com/jerrykuku 18.06
 	ExtraPackages git other luci-app-argon-config https://github.com/jerrykuku master
-	ExtraPackages git other luci-app-adguardhome https://github.com/Hyy2001X master
+	## ExtraPackages git other luci-app-adguardhome https://github.com/Hyy2001X master
 	ExtraPackages svn other luci-app-smartdns https://github.com/kenzok8/openwrt-packages/trunk
 	ExtraPackages svn other smartdns https://github.com/kenzok8/openwrt-packages/trunk
 	ExtraPackages git other OpenClash https://github.com/vernesong master
-	ExtraPackages git other luci-app-serverchan https://github.com/tty228 master
+	## ExtraPackages git other luci-app-serverchan https://github.com/tty228 master
 	ExtraPackages svn other luci-app-socat https://github.com/Lienol/openwrt-package/trunk
 }
 
 Diy-Part2() {
 	Diy_Part2_Base
-	Replace_File Customize/mwan3.config package/feeds/packages/mwan3/files/etc/config mwan3
+	# Replace_File Customize/mwan3.config package/feeds/packages/mwan3/files/etc/config mwan3
 	# ExtraPackages svn feeds/packages mwan3 https://github.com/openwrt/packages/trunk/net
 }
 
