@@ -1,201 +1,324 @@
 #!/bin/bash
 # https://github.com/Hyy2001X/AutoBuild-Actions
 # AutoBuild Module by Hyy2001
-# AutoUpdate for Openwrt
+# AutoBuild_Tools for Openwrt
 
-Version=V4.9
+Version=V1.2.1-BETA
 
-TIME() {
-	echo -ne "\n[$(date "+%H:%M:%S")] "
+AutoBuild_Tools() {
+	while :
+	do
+		clear
+		echo -e "AutoBuild 固件工具箱 ${Version}\n"
+		echo "1.内部空间扩展"
+		echo "2.Samba 共享"
+		echo "3.挂载硬盘"
+		echo "4.查看挂载点"
+		echo "5.安装软件包"
+		echo -e "\nq.退出\n"
+		read -p "请从上方选择一个操作:" Choose
+		case $Choose in
+		q)
+			rm -rf /tmp/AutoExpand /tmp/AutoSamba
+			clear
+			exit
+		;;
+		1)
+			
+			AutoExpand_UI
+		;;
+		2)
+			Samba_UI
+		;;
+		3)
+			block mount
+		;;
+		4)
+			clear && mount
+			Enter
+		;;
+		5)
+			Install_UI	
+		;;
+		esac
+	done
 }
 
-CURRENT_Version="$(awk 'NR==1' /etc/openwrt_info)"
-Github="$(awk 'NR==2' /etc/openwrt_info)"
-DEFAULT_Device="$(awk 'NR==3' /etc/openwrt_info)"
-CURRENT_Device="$(jsonfilter -e '@.model.id' < /etc/board.json | tr ',' '_')"
-Github_Download="${Github}/releases/download/AutoUpdate"
-Author="${Github##*com/}"
-Github_Tags="https://api.github.com/repos/${Author}/releases/latest"
-cd /etc
-clear && echo "Openwrt-AutoUpdate Script ${Version}"
-Input_Option="$1"
-if [[ -z "${Input_Option}" ]];then
-	Upgrade_Options="-q" && TIME && echo "执行: 保留配置更新固件[静默模式]"
-else
-	case ${Input_Option} in
-	-n)
-		TIME && echo "执行: 更新固件(不保留配置)"
+AutoExpand_UI() {
+	uci set fstab.@global[0].auto_mount='0'
+	uci set fstab.@global[0].auto_swap='0'
+	uci commit fstab
+	clear
+	echo -e "Newifi-D2 一键扩展内部空间\n"
+	USB_Check_Core
+	if [[ ! -z "${Check_Disk}" ]];then
+		for ((i=1;i<=${Disk_Number};i++));
+		do
+			Disk_info=$(sed -n ${i}p ${Disk_Processed_List})
+			List_Disk ${Disk_info}
+		done
+		echo -e "\nq.返回"
+		echo "r.重新载入列表"
+	else
+		echo "未检测到外接硬盘!" && sleep 2
+		return
+	fi
+	echo ""
+	read -p "请输入要操作的硬盘编号[1-${Disk_Number}]:" Choose
+	echo ""
+	case ${Choose} in
+	q)
+		return
 	;;
-	-q)
-		TIME && echo "执行: 更新固件(保留配置)"
-	;;
-	-f)
-		Force_Update="1"
-		Upgrade_Options="-q"
-		TIME && echo "执行: 强制更新固件(保留配置)"
-	;;
-	-u)
-		AutoUpdate_Mode="1"
-		Upgrade_Options="-q"
-	;;
-	-s)
-		Stable_Mode="1"
-		Upgrade_Options="-q"
-		TIME && echo "执行: 更新固件到最新稳定版本(保留配置)"
-	;;
-	-sn|-ns)
-		Stable_Mode="1"
-		Upgrade_Options="-n"
-		TIME && echo "执行: 更新固件到最新稳定版本(不保留配置)"
+	r)
+		AutoExpand_UI
 	;;
 	*)
-		echo -e "\n使用方法: bash /bin/AutoUpdate.sh [参数]"
-		echo -e "\n可供使用的[参数]:\n"
-		echo "	-q	更新固件,不打印备份信息日志[保留配置]"
-		echo "	-n	更新固件[不保留配置]"
-		echo "	-f	强制更新固件,即跳过版本号验证,自动下载以及安装必要软件包[保留配置]"
-		echo "	-u	适用于定时更新的参数,自动下载以及安装必要软件包[保留配置]"
-		echo "	-s	更新/回退固件到最新的稳定版本[保留配置]"
-		echo "	-sn	更新/回退固件到最新的稳定版本[不保留配置]"
-		echo -e "\n项目地址: ${Github}"
-		echo -e "当前设备: ${DEFAULT_Device}\n"
-		exit
+		if [ ${Choose} -gt 0 ] > /dev/null 2>&1 && [ ${Choose} -le ${Disk_Number} ] > /dev/null 2>&1;then
+			
+			which mkfs.ext4 > /dev/null 2>&1
+			if [ "$?" -eq 0 ];then
+				AutoExpand_Core
+			else
+				echo "请先安装 [e2fsprogs] !" && sleep 3
+			fi			
+		else
+			echo "选择错误,请输入正确的选项!"
+			sleep 2 && AutoExpand_UI
+			exit
+		fi
 	;;
 	esac
-	if [[ ! "${Force_Update}" == "1" ]] && [[ ! "${AutoUpdate_Mode}" == "1" ]] && [[ ! "${Stable_Mode}" == "1" ]];then
-		Upgrade_Options="${Input_Option}"
+}
+
+USB_Check_Core() {
+	block mount
+	rm -rf ${AutoExpend_Tmp}/*
+	echo "$(block info)" > ${Block_Info}
+	Check_Disk="$(cat  ${Block_Info} | awk  -F ':' '/sd/{print $1}')"
+	if [ ! -z "${Check_Disk}" ];then
+		echo "${Check_Disk}" > ${Disk_List}
+		Disk_Number=$(sed -n '$=' ${Disk_List})
+		for Disk_Name in $(cat ${Disk_List})
+		do
+			Mounted_on="$(df -h | grep "${Disk_Name}" | awk '{print $6}')"
+			Disk_Available="$(df -m | grep "${Disk_Name}" | awk '{print $4}')"
+			Disk_Format="$(cat  ${Block_Info} | grep "${Disk_Name}" | egrep -o 'TYPE="[a-z].+' | awk -F '["]' '/TYPE/{print $2}')"
+			touch ${Disk_Processed_List}
+			if [ ! -z "$Mounted_on" ];then
+				echo "${Disk_Name} ${Mounted_on} ${Disk_Format} ${Disk_Available}MB" >> ${Disk_Processed_List}
+			else
+				echo "${Disk_Name} ${Disk_Format}" >> ${Disk_Processed_List}
+			fi
+		done
 	fi
-fi
-opkg list | awk '{print $1}' > /tmp/Package_list
-if [[ ! "${Force_Update}" == "1" ]] && [[ ! "${AutoUpdate_Mode}" == "1" ]];then
-	grep "curl" /tmp/Package_list > /dev/null 2>&1
-	if [[ ! $? -ne 0 ]];then
-		Google_Check=$(curl -I -s --connect-timeout 5 www.google.com -w %{http_code} | tail -n1)
-		[ ! "$Google_Check" == 200 ] && TIME && echo "Google 连接失败,可能导致固件下载速度缓慢!"
-	fi
-fi
-grep "wget" /tmp/Package_list > /dev/null 2>&1
-if [[ $? -ne 0 ]];then
-	if [[ "${Force_Update}" == "1" ]] || [[ "${AutoUpdate_Mode}" == "1" ]];then
-		Choose="Y"
+}
+
+AutoExpand_Core() {
+	Choosed_Disk="$(sed -n ${Choose}p ${Disk_Processed_List} | awk '{print $1}')"
+	echo "警告: 本次操作将把硬盘: '${Choosed_Disk}' 格式化为 'ext4' 格式,请提前做好数据备份工作!"
+	read -p "是否继续本次操作?[Y/n]:" Choose
+	if [ ${Choose} == Y ] || [ ${Choose} == y ];then
+		sleep 3 && echo ""
 	else
-		TIME && read -p "未安装[wget],是否执行安装?[Y/n]:" Choose
+		sleep 3
+		echo "用户已取消操作."
+		break
 	fi
-	if [[ "${Choose}" == Y ]] || [[ "${Choose}" == y ]];then
-		TIME && echo -e "开始安装[wget],请耐心等待...\n"
-		opkg update > /dev/null 2>&1
-		opkg install wget
-	else
-		TIME && echo "用户已取消安装,即将退出更新脚本..."
-		sleep 2
-		exit
-	fi
-fi
-if [[ -z "${CURRENT_Version}" ]];then
-	TIME && echo "警告: 当前固件版本获取失败!"
-	CURRENT_Version="未知"
-fi
-if [[ -z "${CURRENT_Device}" ]];then
-	[[ "${Force_Update}" == "1" ]] && exit
-	TIME && echo "警告: 当前设备名称获取失败,使用预设名称[$DEFAULT_Device]"
-	CURRENT_Device="${DEFAULT_Device}"
-fi
-TIME && echo "正在检查版本更新..."
-[ ! -f /tmp/Github_Tags ] && touch /tmp/Github_Tags
-wget -q ${Github_Tags} -O - > /tmp/Github_Tags
-if [[ ${Stable_Mode} == 1 ]];then
-	GET_Version_Type="-Stable"
-else
-	GET_Version_Type=""
-fi
-GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "AutoBuild-${CURRENT_Device}-R[0-9]+.[0-9]+.[0-9]+.[0-9]+${GET_Version_Type}" | awk 'END {print}')
-GET_Version="${GET_FullVersion#*${CURRENT_Device}-}"
-if [[ -z "${GET_FullVersion}" ]] || [[ -z "${GET_Version}" ]];then
-	TIME && echo "检查更新失败,请稍后重试!"
-	exit
-fi
-echo -e "\n固件作者: ${Author%/*}"
-echo "设备名称: ${DEFAULT_Device}"
-echo -e "\n当前固件版本: ${CURRENT_Version}"
-echo "云端固件版本: ${GET_Version}"
-Check_Stable_Version=$(echo ${GET_Version} | egrep -o "R[0-9]+.[0-9]+.[0-9]+.[0-9]+")
-if [[ ! ${Force_Update} == 1 ]];then
-	if [[ "${CURRENT_Version}" == "${Check_Stable_Version}" ]];then
-		[[ "${AutoUpdate_Mode}" == "1" ]] && exit
-		TIME && read -p "已是最新版本,是否强制更新固件?[Y/n]:" Choose
-		if [[ "${Choose}" == Y ]] || [[ "${Choose}" == y ]];then
-			TIME && echo "开始强制更新固件..."
-		else
-			TIME && echo "已取消强制更新,即将退出更新程序..."
-			sleep 1
+	if [[ "$(mount)" =~ "${Choosed_Disk}" ]] > /dev/null 2>&1 ;then
+		Choosed_Disk_Mounted="$(mount | grep "${Choosed_Disk}" | awk '{print $3}')"
+		echo "取消挂载: '${Choosed_Disk}' on '${Choosed_Disk_Mounted}' ..."
+		umount -l ${Choosed_Disk_Mounted} > /dev/null 2>&1
+		if [ "$(mount)" =~ "${Choosed_Disk_Mounted}" ] > /dev/null 2>&1 ;then
+			echo "取消挂载: '${Choosed_Disk_Mounted}' 失败 !"
 			exit
 		fi
 	fi
-fi
-Firmware_Info="${GET_FullVersion}"
-Firmware="${Firmware_Info}.bin"
-Firmware_Detail="${Firmware_Info}.detail"
-echo -e "\n云端固件名称: ${Firmware}"
-echo "固件下载地址: ${Github_Download}"
-Disk_List="/tmp/disk_list"
-[ -f $Disk_List ] && rm -f $Disk_List
-Check_Disk="$(mount | egrep -o "mnt/+sd[a-zA-Z][0-9]+")"
-if [ ! -z "${Check_Disk}" ];then
-	echo "${Check_Disk}" > ${Disk_List}
-	Disk_Number=$(sed -n '$=' ${Disk_List})
-	if [ ${Disk_Number} -gt 1 ];then
-		for Disk_Name in $(cat ${Disk_List})
-		do
-			Disk_Available="$(df -m | grep "${Disk_Name}" | awk '{print $4}')"
-			if [ "${Disk_Available}" -gt 20 ];then
-				Download_Path="/${Disk_Name}"
-				break
-			else
-				Download_Path="/tmp"
-			fi
-		done
+	echo "正在格式化硬盘: '${Choosed_Disk}' 为 'ext4' 格式 ..."
+	mkfs.ext4 -F ${Choosed_Disk} > /dev/null 2>&1
+	echo "格式化完成! 挂载硬盘: '${Choosed_Disk}' 到 ' /tmp/extroot' ..."
+	mkdir -p /tmp/introot && mkdir -p /tmp/extroot
+	mount --bind / /tmp/introot
+	mount ${Choosed_Disk} /tmp/extroot
+	echo "正在备份系统文件到 硬盘: '${Choosed_Disk}',请耐心等待 ..."
+	tar -C /tmp/introot -cf - . | tar -C /tmp/extroot -xf -
+	echo "取消挂载: '/tmp/introot' '/tmp/extroot' ..."
+	umount /tmp/introot && umount /tmp/extroot
+	[ ! -d /mnt/bak ] && mkdir -p /mnt/bak
+	mount ${Choosed_Disk} /mnt/bak
+	echo "同步系统文件改动 ..."
+	sync
+	echo "写入 '分区表' 到 '/etc/config/fstab' ..."
+	block detect > /etc/config/fstab
+	sed -i "s?/mnt/bak?/?g" /etc/config/fstab
+	for ((i=0;i<=${Disk_Number};i++));
+	do
+		uci set fstab.@mount[${i}].enabled='1' > /dev/null 2>&1
+	done
+	uci commit fstab
+	umount -l /mnt/bak
+	echo -e "操作结束,外接硬盘: '${Choosed_Disk}' 已挂载到 '/'.\n"
+	read -p "挂载完成后需要重启生效,是否立即重启路由器?[Y/n]:" Choose
+	if [ ${Choose} == Y ] || [ ${Choose} == y ];then
+		sleep 3 && echo -e "\n正在重启路由器,请耐心等待 ..."
+		sync
+		reboot
 	else
-		Disk_Name="${Check_Disk}"
-		Disk_Available="$(df -m | grep "${Disk_Name}" | awk '{print $4}')"
-		if [ "${Disk_Available}" -gt 20 ];then
-			Download_Path="/${Disk_Name}"
-		else
-			Download_Path="/tmp"
-		fi
+		echo "用户已取消重启操作."
+		sleep 3
+		break
 	fi
+}
+
+List_Disk() {
+	if [[ ${2} == "/" ]];then
+		_Type="[不可用]"
+	else
+		_Type="[可用]"
+	fi
+	if [[ ! -z ${3} ]];then
+		echo "${i}.${_Type}硬盘: '${1}' 挂载点: '${2}' 格式: '${3}' 可用空间: ${4}"
+	else
+		echo "${i}.硬盘: '${1}' 格式: '${2}' 未挂载"
+	fi
+}
+
+Samba_UI() {
+	while :
+	do
+		clear
+		echo -e "Samba 工具箱\n"
+		echo "1.删除所有 Samba 挂载点"
+		echo "2.自动共享所有已连接的硬盘"
+		echo -e "\nq.返回\n"
+		read -p "请从上方选择一个操作:" Choose
+		case $Choose in
+		1)
+			Remove_Samba_Settings
+		;;
+		2)
+			Mount_Samba_Devices
+		;;
+		q)
+			break
+		;;
+		esac
+	done
+}
+
+Remove_Samba_Settings() {
+	while :
+	do
+		Samba_config="$(grep "sambashare" /etc/config/samba | wc -l)"
+		[ "${Samba_config}" -eq 0 ] && break
+		uci delete samba.@sambashare[0]
+		uci commit
+	done
+	echo -e "\n已删除所有共享挂载点!"
+	sleep 2
+}
+
+Mount_Samba_Devices() {
+	echo "$(cat /proc/mounts  | awk  -F ':' '/sd/{print $1}')" > ${Disk_List}
+	Disk_Number=$(sed -n '$=' ${Disk_List})
+	echo ""
+	for ((i=1;i<=${Disk_Number};i++));
+	do
+		Disk_Name=$(sed -n ${i}p ${Disk_List} | awk '{print $1}')
+		Disk_Mounted_on=$(sed -n ${i}p ${Disk_List} | awk '{print $2}')
+		Samba_Name=${Disk_Mounted_on#*/mnt/}
+		uci show 2>&1 | grep "sambashare" > ${UCI_Show_List}
+		if [[ ! "$(cat ${UCI_Show_List})" =~ "${Disk_Name}" ]] > /dev/null 2>&1 ;then
+			echo "共享硬盘: '${Disk_Name}' on '${Disk_Mounted_on}' 到 '${Samba_Name}' ..."
+			echo -e "\nconfig sambashare" >> ${Samba_Config_File}
+			echo -e "\toption auto '1'" >> ${Samba_Config_File}
+			echo -e "\toption name '${Samba_Name}'" >> ${Samba_Config_File}
+			echo -e "\toption device '${Disk_Name}'" >> ${Samba_Config_File}
+			echo -e "\toption path '${Disk_Mounted_on}'" >> ${Samba_Config_File}
+			echo -e "\toption read_only 'no'" >> ${Samba_Config_File}
+			echo -e "\toption guest_ok 'yes'" >> ${Samba_Config_File}
+			echo -e "\toption create_mask '0666'" >> ${Samba_Config_File}
+			echo -e "\toption dir_mask '0777'" >> ${Samba_Config_File}
+		else
+			echo "硬盘: '${Disk_Name}' 已设置共享."
+		fi
+	done
+	/etc/init.d/samba restart
+	sleep 2
+}
+
+Install_UI() {
+while :
+	do
+		clear
+		echo -e "安装软件包\n"
+		echo "1.更新软件包列表"
+		Install_UI_Mod 2 block-mount
+		Install_UI_Mod 3 e2fsprogs
+		echo "x.自定义软件包名"
+		echo -e "\nq.返回\n"
+		read -p "请从上方选择一个操作:" Choose
+		echo ""
+		case $Choose in
+		q)
+			break
+		;;
+		x)
+			echo "常用的附加参数:"
+			echo "--force-depends		在安装、删除软件包时无视失败的依赖"
+			echo "--force-downgrade	允许降级安装软件包"
+			echo -e "--force-reinstall	重新安装软件包\n"
+			read -p "请输入你想安装的软件包名:" PKG_NAME
+			Install_opkg_mod $PKG_NAME
+		;;
+		1)
+			opkg update
+		;;
+		2)
+			Install_opkg_mod block-mount	
+		;;
+		3)
+			Install_opkg_mod e2fsprogs
+		;;
+		esac
+	done
+}
+
+Install_UI_Mod() {
+	if [[ "$(opkg list | awk '{print $1}')" =~ "${2}" ]] > /dev/null 2>&1 ;then
+		echo "${1}.安装 [${2}] [已安装]"
+	else
+		echo "${1}.未安装 [${2}] [已安装]"
+	fi
+}
+
+Install_opkg_mod() {
+	opkg install ${*}
+	if [[ "$(opkg list | awk '{print $1}')" =~ "${1}" ]] > /dev/null 2>&1 ;then
+		echo -e "\n${1} 安装成功!"
+	else
+		echo -e "\n${1} 安装失败!"
+	fi
+	sleep 2
+}
+
+Enter() {
+	echo "" && read -p "按下[回车]键以继续..." Key
+}
+
+AutoExpend_Tmp="/tmp/AutoExpand"
+Disk_List="${AutoExpend_Tmp}/Disk_List"
+Block_Info="${AutoExpend_Tmp}/Block_Info"
+Disk_Processed_List="${AutoExpend_Tmp}/Disk_Processed_List"
+[ ! -d ${AutoExpend_Tmp} ] && mkdir -p ${AutoExpend_Tmp}
+Samba_Config_File="/etc/config/samba"
+Samba_Tmp="/tmp/AutoSamba"
+Disk_List="${Samba_Tmp}/Disk_List"
+UCI_Show_List="${Samba_Tmp}/UCI_List"
+[ ! -d ${Samba_Tmp} ] && mkdir -p ${Samba_Tmp}
+which block > /dev/null 2>&1
+if [ "$?" -eq 0 ];then
+	AutoBuild_Tools
 else
-	Download_Path="/tmp"
+	echo -e "\nAutoBuild_Tools 不适用于此固件,请先安装 [block-mount] !"
 fi
-[ ! -d "${Download_Path}/Downloads" ] && mkdir -p ${Download_Path}/Downloads
-cd ${Download_Path}/Downloads
-echo "固件保存位置: ${Download_Path}/Downloads"
-TIME && echo "正在下载固件,请耐心等待..."
-wget -q "${Github_Download}/${Firmware}" -O ${Firmware}
-if [[ ! "$?" == 0 ]];then
-	TIME && echo "固件下载失败,请检查网络后重试!"
-	exit
-fi
-TIME && echo "固件下载成功!"
-TIME && echo "正在获取云端固件MD5,请耐心等待..."
-wget -q ${Github_Download}/${Firmware_Detail} -O ${Firmware_Detail}
-if [[ ! "$?" == 0 ]];then
-	TIME && echo "MD5 获取失败,请检查网络后重试!"
-	exit
-fi
-GET_MD5=$(awk -F '[ :]' '/MD5/ {print $2;exit}' ${Firmware_Detail})
-CURRENT_MD5=$(md5sum ${Firmware} | cut -d ' ' -f1)
-echo -e "\n本地固件MD5:${CURRENT_MD5}"
-echo "云端固件MD5:${GET_MD5}"
-if [[ -z "${GET_MD5}" ]] || [[ -z "${CURRENT_MD5}" ]];then
-	echo -e "\nMD5 获取失败!"
-	exit
-fi
-if [[ ! "${GET_MD5}" == "${CURRENT_MD5}" ]];then
-	echo -e "\nMD5 对比失败,请检查网络后重试!"
-	exit
-else
-	TIME && echo -e "MD5 对比通过!"
-fi
-TIME && echo -e "开始更新固件,请耐心等待路由器重启...\n"
-sleep 3
-sysupgrade ${Upgrade_Options} ${Firmware}
