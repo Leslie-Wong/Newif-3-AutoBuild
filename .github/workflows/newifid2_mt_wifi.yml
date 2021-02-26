@@ -6,7 +6,7 @@
 # Modify: Hyy2001X
 #=======================================================
 
-name: AutoBuild OpenWrt
+name: Build Newifi-3_MT_Wifi
 
 on: 
 #  release:
