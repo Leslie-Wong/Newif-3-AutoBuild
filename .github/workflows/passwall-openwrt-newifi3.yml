@@ -34,7 +34,7 @@ on:
 
 env:
   REPO_URL: https://github.com/Lienol/openwrt
-  REPO_BRANCH: 21.02
+  REPO_BRANCH: 19.07
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: passwall-newifi3.config
   ##CUSTOM_SCRIPT: ./Scripts/diy-script.sh
