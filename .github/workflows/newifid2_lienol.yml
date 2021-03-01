@@ -6,7 +6,7 @@
 # Modify: Hyy2001X
 #=======================================================
 
-name: AutoBuild OpenWrt Lienol
+name: Build Newifi-3_Lienol
 
 on: 
 #  release:
@@ -18,11 +18,12 @@ on:
 #    paths:
 #      - '.config'
 
-#  schedule:
-#    - cron: 0 8 * * 5
+  schedule:
+    - cron: 0 0 * * *
+  
   watch:
     types: [started]
-    
+  
   repository_dispatch:
   workflow_dispatch:
     inputs:
@@ -33,18 +34,21 @@ on:
 
 env:
   REPO_URL: https://github.com/Lienol/openwrt.git
-  REPO_BRANCH: 19.07
+  REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config_lienol_2
-  #CONFIG_FILE: .config
-  CUSTOM_SCRIPT: ./Scripts/diy-script-lienol.sh
-  DIY_P1_SH: ./Scripts/diy-part1-lienol.sh
+  ##CUSTOM_SCRIPT: ./Scripts/diy-script.sh
+  DIY_SCRIPT: Scripts/AutoBuild_DiyScript.sh
+  FUNCTION_SCRIPT: Scripts/AutoBuild_Function.sh
+  DIY_P1_SH: ./Scripts/diy-part1.sh
   TZ: Asia/Shanghai
   UPLOAD_RELEASE: true
   UPLOAD_FIRMWARE: true
   UPLOAD_BIN_DIR: false
   UPLOAD_COWTRANSFER: true
   UPLOAD_WETRANSFER: true
+  UPLOAD_RELEASE_NAME: Newifi-3_Lienol
+  
 
 jobs:
   build:
@@ -80,9 +84,12 @@ jobs:
 
     - name: Run Diy-Part1 Scripts
       run: |
-        chmod +x $CUSTOM_SCRIPT
+        chmod +x $DIY_SCRIPT
         cd openwrt
-        source $GITHUB_WORKSPACE/$CUSTOM_SCRIPT && Diy-Part1
+        source $GITHUB_WORKSPACE/$DIY_SCRIPT
+        source $GITHUB_WORKSPACE/$FUNCTION_SCRIPT && Diy-Part1
+        echo "Compile_Date=$(date +%Y%m%d)" > $GITHUB_WORKSPACE/Openwrt.info
+        echo "Display_Date=$(date +'%Y/%m/%d')" >> $GITHUB_WORKSPACE/Openwrt.info
 
     - name: Update & Install Feeds
       run: |
@@ -92,9 +99,17 @@ jobs:
 
     - name: Run Diy-Part2 Scripts
       run: |
-        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        [ -f $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         cd openwrt
-        source $GITHUB_WORKSPACE/$CUSTOM_SCRIPT && Diy-Part2
+        source $GITHUB_WORKSPACE/$DIY_SCRIPT
+        source $GITHUB_WORKSPACE/$FUNCTION_SCRIPT && Diy-Part2
+    
+    - name: SSH connection to Actions
+      uses: P3TERX/ssh2actions@v1.0.0
+      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
+      env:
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
     - name: Download Packages
       run: |
@@ -111,7 +126,8 @@ jobs:
       run: |
         cd openwrt
         make -j$(nproc) || make -j1 V=s
-
+        echo "FILE_DATE=_$(date +"%Y%m%d_%H%M")" >> $GITHUB_ENV
+        
 #    - name: Run Diy-Part3 Scripts
 #      run: |
 #        echo "## $(date +"%Y%m%d")-AutoBuild" > update_log.txt
@@ -159,31 +175,37 @@ jobs:
       with:
         name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         path: openwrt/bin
-
+        
+    
     - name: Organize files
       id: organize
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
         cd openwrt/bin/targets/*/*
-        rm -rf packages
+        # rm -rf packages
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "::set-output name=status::success"
         
-    - name: Upload firmware directory
-      uses: actions/upload-artifact@main
-      if: steps.organize.outputs.status == 'success' && !cancelled()
-      with:
-        name: Newifi_3_d
-        path: openwrt/bin
-        #name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
-        #path: ${{ env.FIRMWARE }}
+    - name: Zip files
+      run: |
+        cd openwrt/bin
+        mkdir ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        tar -zcvf ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}/packages.tar.gz packages
+        # tar -zcvf newifi3${{ env.FILE_DATE }}/targets.tar.gz targets
+        # cp -rf packages ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        cp -rf targets ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        cd ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        echo "UPLOADFILES=$PWD" >> $GITHUB_ENV
 
     - name: Upload firmware to cowtransfer
       id: cowtransfer
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
       run: |
+        ls -hl
+        echo ${FIRMWARE}
         curl -fsSL git.io/file-transfer | sh
-        ./transfer cow --block 2621440 -s -p 64 --no-progress ${FIRMWARE} 2>&1 | tee cowtransfer.log
+        #./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/newifi3${{ env.FILE_DATE }} 2>&1 | tee cowtransfer.log
+        ./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/bin/${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }} 2>&1 | tee cowtransfer.log
         echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
         echo "::set-output name=url::$(cat cowtransfer.log | grep https | cut -f3 -d" ")"
         
@@ -192,15 +214,31 @@ jobs:
       if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
       run: |
         curl -fsSL git.io/file-transfer | sh
-        ./transfer wet -s -p 16 --no-progress ${FIRMWARE} 2>&1 | tee wetransfer.log
+        ./transfer wet -s -p 16 --no-progress ${UPLOADFILES} 2>&1 | tee wetransfer.log
+        #./transfer wet -s -p 16 --no-progress openwrt/newifi-3-AutoBuild${{ env.FILE_DATE }}.tar.gz 2>&1 | tee wetransfer.log
         echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
         echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
         
+    - name: remove packages folder
+      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      run: |
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        
+    - name: Upload firmware directory
+      uses: actions/upload-artifact@main
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        path: openwrt/bin
+        #name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        #path: ${{ env.FIRMWARE }}
+    
     - name: Generate release tag
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "::set-output name=release_tag::Lienol_$(date +"%Y.%m.%d-%H%M")"
+        echo "::set-output name=release_tag::${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}"
         touch release.txt
         [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
         [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
