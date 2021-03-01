@@ -34,7 +34,7 @@ on:
 
 env:
   REPO_URL: https://github.com/Lienol/openwrt.git
-  REPO_BRANCH: master
+  REPO_BRANCH: 21.02
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config_lienol_2
   ##CUSTOM_SCRIPT: ./Scripts/diy-script.sh
