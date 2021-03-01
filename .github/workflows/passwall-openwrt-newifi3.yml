@@ -6,7 +6,7 @@
 # Modify: Hyy2001X
 #=======================================================
 
-name: Build Newifi-3_MT_Wifi
+name: Build Newifi-3_Passwall
 
 on: 
 #  release:
