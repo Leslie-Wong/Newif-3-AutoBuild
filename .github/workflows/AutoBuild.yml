@@ -47,6 +47,7 @@ env:
   UPLOAD_BIN_DIR: false
   UPLOAD_COWTRANSFER: true
   UPLOAD_WETRANSFER: true
+  UPLOAD_RELEASE_NAME: Newifi-3_AutoBuild
 
 jobs:
   build:
@@ -186,11 +187,13 @@ jobs:
         
     - name: Zip files
       run: |
-        cd openwrt/bin
-        mkdir newifi3${{ env.FILE_DATE }}
-        tar -zcvf newifi3${{ env.FILE_DATE }}/packages.tar.gz packages
-        tar -zcvf newifi3${{ env.FILE_DATE }}/targets.tar.gz targets
-        cd newifi3${{ env.FILE_DATE }}
+        ccd openwrt/bin
+        mkdir ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        tar -zcvf ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}/packages.tar.gz packages
+        # tar -zcvf newifi3${{ env.FILE_DATE }}/targets.tar.gz targets
+        # cp -rf packages ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        cp -rf targets ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        cd ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
         echo "UPLOADFILES=$PWD" >> $GITHUB_ENV
 
     - name: Upload firmware to cowtransfer
@@ -201,7 +204,7 @@ jobs:
         echo ${FIRMWARE}
         curl -fsSL git.io/file-transfer | sh
         #./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/newifi3${{ env.FILE_DATE }} 2>&1 | tee cowtransfer.log
-        ./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/bin/newifi3${{ env.FILE_DATE }} 2>&1 | tee cowtransfer.log
+        ./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/bin/${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }} 2>&1 | tee cowtransfer.log
         echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
         echo "::set-output name=url::$(cat cowtransfer.log | grep https | cut -f3 -d" ")"
         
@@ -225,7 +228,7 @@ jobs:
       uses: actions/upload-artifact@main
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
-        name: Newifi_3_d-AutoBuild${{ env.FILE_DATE }}
+        name: ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
         path: openwrt/bin
         #name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
         #path: ${{ env.FIRMWARE }}
@@ -234,7 +237,7 @@ jobs:
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       run: |
-        echo "::set-output name=release_tag::newifi-3-AutoBuild${{ env.FILE_DATE }}"
+        echo "::set-output name=release_tag::${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}"
         touch release.txt
         [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
         [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
