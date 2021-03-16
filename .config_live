@@ -1,0 +1,154 @@
+CONFIG_TARGET_ramips=y
+CONFIG_TARGET_ramips_mt7621=y
+CONFIG_TARGET_ramips_mt7621_DEVICE_d-team_newifi-d2=y
+CONFIG_IPV6=y
+CONFIG_KERNEL_IPV6=y
+# CONFIG_PACKAGE_luci-app-arpbind is not set
+# CONFIG_PACKAGE_luci-app-mtwifi is not set
+# CONFIG_PACKAGE_luci-app-rclone_INCLUDE_fuse-utils is not set
+# CONFIG_PACKAGE_luci-app-rclone_INCLUDE_rclone-ng is not set
+# CONFIG_PACKAGE_luci-app-rclone_INCLUDE_rclone-webui is not set
+# CONFIG_PACKAGE_mt_wifi is not set
+# CONFIG_PACKAGE_kmod-mt7603e is not set
+# CONFIG_PACKAGE_kmod-mt76x2e is not set
+CONFIG_BUILD_PATENTED=y
+## my add
+CONFIG_KERNEL_MIPS_FPU_EMULATOR=y
+## end
+CONFIG_PACKAGE_kmod-crypto-gcm=y
+CONFIG_PACKAGE_kmod-crypto-md5=y
+CONFIG_PACKAGE_kmod-crypto-sha256=y
+CONFIG_PACKAGE_kmod-mt76=y
+CONFIG_PACKAGE_kmod-tun=y
+CONFIG_PACKAGE_kmod-usb-net=y
+CONFIG_PACKAGE_kmod-usb-net-asix=y
+CONFIG_PACKAGE_kmod-usb-net-cdc-ether=y
+CONFIG_PACKAGE_kmod-usb-net-cdc-ncm=y
+CONFIG_PACKAGE_kmod-usb-net-hso=y
+CONFIG_PACKAGE_kmod-usb-net-huawei-cdc-ncm=y
+CONFIG_PACKAGE_kmod-usb-net-ipheth=y
+CONFIG_PACKAGE_kmod-usb-net-kalmia=y
+CONFIG_PACKAGE_kmod-usb-net-kaweth=y
+CONFIG_PACKAGE_kmod-usb-net-rndis=y
+CONFIG_PACKAGE_dnsmasq_full_dhcpv6=y
+CONFIG_PACKAGE_automount=y
+CONFIG_PACKAGE_autosamba=m
+CONFIG_PACKAGE_ipv6helper=y
+CONFIG_PACKAGE_luci-ssl-openssl=y
+CONFIG_PACKAGE_luci-theme-argon=y
+CONFIG_PACKAGE_luci-app-accesscontrol=y
+CONFIG_PACKAGE_luci-app-adbyby-plus=m
+CONFIG_PACKAGE_luci-app-adguardhome=y
+CONFIG_PACKAGE_luci-app-argon-config=y
+CONFIG_PACKAGE_luci-app-autoupdate=m
+CONFIG_PACKAGE_luci-app-aria2=y
+CONFIG_PACKAGE_luci-app-ddns=y
+CONFIG_PACKAGE_luci-app-filetransfer=m
+# CONFIG_PACKAGE_luci-app-frpc is not set
+CONFIG_PACKAGE_luci-app-hd-idle=m
+## CONFIG_PACKAGE_luci-app-mwan3 is not set
+## CONFIG_PACKAGE_luci-app-mwan3helper is not set
+CONFIG_PACKAGE_luci-app-nlbwmon=y
+CONFIG_PACKAGE_luci-app-openclash=m
+CONFIG_PACKAGE_luci-app-samba=m
+CONFIG_PACKAGE_luci-app-sqm=y
+CONFIG_PACKAGE_luci-app-smartdns=m
+CONFIG_PACKAGE_luci-app-ssr-plus=y
+CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks=y
+CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR=y
+CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Server=y
+CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Xray=y
+## CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_V2ray is not set
+CONFIG_PACKAGE_xray-geodata=y
+## CONFIG_PACKAGE_luci-app-serverchan is not set
+CONFIG_PACKAGE_luci-app-socat=y
+CONFIG_SOCAT_SSL=m
+## CONFIG_PACKAGE_luci-app-syncdial is not set
+CONFIG_PACKAGE_luci-app-ttyd=m
+CONFIG_PACKAGE_luci-app-usb3disable=m
+CONFIG_PACKAGE_luci-app-uhttpd=m
+CONFIG_PACKAGE_luci-app-upnp=y
+CONFIG_PACKAGE_luci-app-unblockmusic=m
+## CONFIG_UnblockNeteaseMusic_Go is not set
+## CONFIG_PACKAGE_luci-app-usb-printer is not set
+CONFIG_PACKAGE_luci-app-vsftpd=y
+## CONFIG_PACKAGE_luci-app-webadmin is not set
+CONFIG_PACKAGE_luci-app-wol=y
+## CONFIG_PACKAGE_luci-app-wireguard is not set
+CONFIG_PACKAGE_luci-app-zerotier=y
+CONFIG_PACKAGE_6rd=y
+CONFIG_PACKAGE_6to4=y
+CONFIG_PACKAGE_ariang=y
+CONFIG_PACKAGE_curl=y
+## CONFIG_PACKAGE_ddns-scripts_aliyun is not set
+CONFIG_PACKAGE_ddns-scripts_dnspod=y
+CONFIG_PACKAGE_ddns-scripts_cloudflare.com-v4=y
+## CONFIG_PACKAGE_ddns-scripts_freedns_42_pl is not set
+## CONFIG_PACKAGE_ddns-scripts_godaddy.com-v1 is not set
+## CONFIG_PACKAGE_ddns-scripts_no-ip_com is not set
+## CONFIG_PACKAGE_ddns-scripts_nsupdate is not set
+## CONFIG_PACKAGE_ddns-scripts_route53-v1 is not set
+CONFIG_PACKAGE_iperf3=y
+CONFIG_PACKAGE_usbutils=y
+CONFIG_PACKAGE_e2fsprogs=y
+CONFIG_PACKAGE_httping=y
+CONFIG_PACKAGE_libudev-fbsd=y
+CONFIG_PACKAGE_ppp-mod-pppol2tp=y
+CONFIG_PACKAGE_ppp-mod-pptp=y
+CONFIG_PACKAGE_wpad=y
+CONFIG_PACKAGE_wget=y
+CONFIG_PACKAGE_xz=y
+CONFIG_PACKAGE_xz-utils=y
+# CONFIG_XRAY_CORE_COMPRESS_GOPROXY is not set
+# CONFIG_UnblockNeteaseMusicGo_INCLUDE_GOPROXY is not set
+
+
+## my add
+CONFIG_PACKAGE_luci-app-passwall=y
+
+#
+# Passwall Configuration
+#
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks=y
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Server=y
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_ShadowsocksR=y
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_ShadowsocksR_Server=y
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Shadowsocks_Rust=y
+## CONFIG_PACKAGE_luci-app-passwall_INCLUDE_V2ray is not set
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Xray=y
+## CONFIG_PACKAGE_luci-app-passwall_INCLUDE_kcptun is not set
+
+# CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Trojan_Plus is not set
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Trojan_GO=y
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_Brook=y
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_NaiveProxy=y
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_haproxy=y
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_ChinaDNS_NG=y
+CONFIG_PACKAGE_luci-app-passwall_INCLUDE_https_dns_proxy=y
+## CONFIG_PACKAGE_luci-app-passwall_INCLUDE_dns2socks is not set
+## CONFIG_PACKAGE_luci-app-passwall_INCLUDE_v2ray-plugin is not set
+# CONFIG_PACKAGE_luci-app-passwall_INCLUDE_simple-obfs is not set
+
+CONFIG_PACKAGE_luci-app-wifischedule=y
+CONFIG_PACKAGE_openssh-sftp-server=y
+CONFIG_PACKAGE_luci-app-vlmcsd=y
+# CONFIG_PACKAGE_luci-app-uhttpd is not set
+CONFIG_PACKAGE_luci-app-openvpn=y
+CONFIG_PACKAGE_luci-app-openvpn-server=y
+
+
+# CONFIG_XRAY_COMPATIBILITY_MODE is not set
+# CONFIG_XRAY_COMPRESS_GOPROXY is not set
+### CONFIG_XRAY_COMPRESS_UPX is not set
+### CONFIG_XRAY_COMPRESS_GOPROXY is not set
+# CONFIG_XRAY_EXCLUDE_ASSETS is not set
+## CONFIG_V2RAY_COMPRESS_UPX is not set
+## CONFIG_V2RAY_COMPRESS_GOPROXY is not set
+
+CONFIG_SHADOWSOCKS_RUST_sslocal_COMPRESS_UPX=y
+CONFIG_SHADOWSOCKS_RUST_ssmanager_COMPRESS_UPX=y
+CONFIG_SHADOWSOCKS_RUST_ssserver_COMPRESS_UPX=y
+CONFIG_SHADOWSOCKS_RUST_ssurl_COMPRESS_UPX=y
+
+# CONFIG_PACKAGE_kcptun-client=y
+# CONFIG_PACKAGE_kcptun-server=y
