@@ -187,7 +187,7 @@ jobs:
         
     - name: Zip files
       run: |
-        ccd openwrt/bin
+        cd openwrt/bin
         mkdir ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
         tar -zcvf ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}/packages.tar.gz packages
         # tar -zcvf newifi3${{ env.FILE_DATE }}/targets.tar.gz targets
