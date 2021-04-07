@@ -6,7 +6,7 @@
 # Modify: Hyy2001X
 #=======================================================
 
-name: Build Newifi-3-Default
+name: Build Newifi-3
 
 on: 
 #  release:
@@ -31,6 +31,7 @@ on:
         description: 'SSH connection to Actions'
         required: false
         default: 'false'
+
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
@@ -167,7 +168,7 @@ jobs:
         
     - name: Upload firmware to cowtransfer
       id: cowtransfer
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
+      if: env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
       run: |
         ls -hl
         echo ${FIRMWARE}
@@ -179,7 +180,7 @@ jobs:
         
     - name: Upload firmware to WeTransfer
       id: wetransfer
-      if: steps.organize.outputs.status == 'success' && env.UPLOAD_WETRANSFER == 'true' && !cancelled()
+      if: env.UPLOAD_WETRANSFER == 'true' && !cancelled()
       run: |
         curl -fsSL git.io/file-transfer | sh
         ./transfer wet -s -p 16 --no-progress ${UPLOADFILES} 2>&1 | tee wetransfer.log
@@ -187,18 +188,28 @@ jobs:
         echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
         echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
 
+    - name: Generate release tag
+      id: tag
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      run: |
+        echo "::set-output name=release_tag::${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}"
+        touch release.txt
+        [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
+        [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
+        echo "::set-output name=status::success"
+        
     - name: Upload AutoBuild Firmware to Artifacts
       uses: actions/upload-artifact@main
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       with:
-        name: OpenWrt_Firmware_${{ env.Artifacts_DATE }}
+        name: ${{ env.UPLOAD_RELEASE_NAME }}_{{ env.Artifacts_DATE }}
         path: openwrt/bin/Firmware
         
     - name: Upload bin directory to Artifacts
       uses: actions/upload-artifact@main
       if: env.UPLOAD_BIN_DIR == 'true' && !cancelled()
       with:
-        name: OpenWrt_bin_${{ env.Artifacts_DATE }}
+        name: ${{ env.UPLOAD_RELEASE_NAME }}_${{ env.Artifacts_DATE }}
         path: openwrt/bin
 
     - name: Upload AutoBuild Firmware to Release
@@ -207,10 +218,11 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
       with:
-        tag_name: AutoUpdate
+        tag_name: ${{ env.UPLOAD_RELEASE_NAME }}
         body_path: update_log.txt
         files: openwrt/bin/Firmware/*
         
+    
     - name: Remove old Release
       uses: dev-drprasad/delete-older-releases@v0.1.0
       if: env.REMOVE_OLD_RELEASE == 'true' && !cancelled()
