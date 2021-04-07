@@ -6,7 +6,7 @@
 # Modify: Hyy2001X
 #=======================================================
 
-name: Build Newifi-3_Passwall
+name: Build Newifi-3
 
 on: 
 #  release:
@@ -33,21 +33,21 @@ on:
         default: 'false'
 
 env:
-  REPO_URL: https://github.com/Lienol/openwrt
-  REPO_BRANCH: 19.07
+  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
-  CONFIG_FILE: passwall-newifi3.config
+  CONFIG_FILE: .config
   ##CUSTOM_SCRIPT: ./Scripts/diy-script.sh
   DIY_SCRIPT: Scripts/AutoBuild_DiyScript.sh
   FUNCTION_SCRIPT: Scripts/AutoBuild_Function.sh
-  DIY_P1_SH: ./Scripts/diy-part1-lienol.sh
+  DIY_P1_SH: ./Scripts/diy-part1.sh
   TZ: Asia/Shanghai
   UPLOAD_RELEASE: true
   UPLOAD_FIRMWARE: true
   UPLOAD_BIN_DIR: false
   UPLOAD_COWTRANSFER: true
   UPLOAD_WETRANSFER: true
-  UPLOAD_RELEASE_NAME: Newifi-3_Passwall
+  UPLOAD_RELEASE_NAME: Newifi-3_AutoBuild
   REMOVE_OLD_RELEASE: true
   REMOVE_WORKFLOW_RUNS: true
 
