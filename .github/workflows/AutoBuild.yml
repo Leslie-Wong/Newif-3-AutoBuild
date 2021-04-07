@@ -47,9 +47,9 @@ env:
   UPLOAD_BIN_DIR: false
   UPLOAD_COWTRANSFER: true
   UPLOAD_WETRANSFER: true
+  UPLOAD_RELEASE_NAME: Newifi-3_AutoBuild
   REMOVE_OLD_RELEASE: true
   REMOVE_WORKFLOW_RUNS: true
-  UPLOAD_RELEASE_NAME: Newifi-3_AutoBuild
 
 jobs:
   build:
