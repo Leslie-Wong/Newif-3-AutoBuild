@@ -6,7 +6,7 @@
 # Modify: Hyy2001X
 #=======================================================
 
-name: Build Newifi-3
+name: Build Newifi-3_Default
 
 on: 
 #  release:
@@ -37,7 +37,7 @@ env:
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: backup.config
-  DIY_SCRIPT: Scripts/AutoBuild_DiyScript_new.sh
+  DIY_SCRIPT: Scripts/AutoBuild_DiyScript.sh
   FUNCTION_SCRIPT: Scripts/AutoBuild_Function.sh
   DIY_P1_SH: ./Scripts/diy-part1.sh
   TZ: Asia/Shanghai
