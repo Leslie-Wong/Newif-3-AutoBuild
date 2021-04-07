@@ -207,7 +207,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
       with:
         tag_name: AutoUpdate
         body_path: update_log.txt
@@ -220,7 +220,7 @@ jobs:
         keep_latest: 3
         delete_tags: true
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         
     - name: Remove workflow runs
       uses: GitRML/delete-workflow-runs@main
