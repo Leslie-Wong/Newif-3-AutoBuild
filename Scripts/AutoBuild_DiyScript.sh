@@ -4,41 +4,27 @@
 # AutoBuild DiyScript
 
 Diy_Core() {
-	Author=LesLie.W
+	uthor=LesLie.W
 	Default_Device=d-team_newifi-d2
 
 	INCLUDE_AutoUpdate=true
 	INCLUDE_AutoBuild_Tools=true
-	INCLUDE_mt7621_OC1000MHz=false
-
-	INCLUDE_SSR_Plus=true
-	INCLUDE_Passwall=true
-	INCLUDE_HelloWorld=false
-	INCLUDE_Bypass=false
-	INCLUDE_OpenClash=true
-	INCLUDE_OAF=false
+	INCLUDE_DRM_I915=true
+	INCLUDE_Obsolete_PKG_Compatible=
 }
 
-Diy-Part1() {
-	Diy_Part1_Base
+Firmware-Diy() {
+	Update_Makefile exfat package/kernel/exfat
+	Replace_File CustomFiles/webadmin.po package/lean/luci-app-webadmin/po/zh-cn
 
-	Replace_File Customize/mac80211.sh package/kernel/mac80211/files/lib/wifi
-
-	ExtraPackages git lean luci-theme-argon https://github.com/jerrykuku 18.06
-	ExtraPackages git other luci-app-argon-config https://github.com/jerrykuku master
-	ExtraPackages git other luci-app-adguardhome https://github.com/Hyy2001X master
-	ExtraPackages git other luci-app-shutdown https://github.com/Hyy2001X master
-	ExtraPackages svn other luci-app-smartdns https://github.com/project-openwrt/openwrt/trunk/package/ntlf9t
-	ExtraPackages git other luci-app-serverchan https://github.com/tty228 master
-	ExtraPackages svn other luci-app-socat https://github.com/Lienol/openwrt-package/trunk
-	ExtraPackages svn other luci-app-usb3disable https://github.com/project-openwrt/openwrt/trunk/package/ctcgfw
-}
-
-Diy-Part2() {
-	Diy_Part2_Base
-	ExtraPackages svn other/../../feeds/packages/admin netdata https://github.com/openwrt/packages/trunk/admin
-}
-
-Diy-Part3() {
-	Diy_Part3_Base
+	case ${TARGET_PROFILE} in
+	d-team_newifi-d2)
+		Replace_File CustomFiles/mac80211.sh package/kernel/mac80211/files/lib/wifi
+		Replace_File CustomFiles/system_newifi-d2 package/base-files/files/etc/config system
+		Replace_File CustomFiles/Patches/102-mt7621-fix-cpu-clk-add-clkdev.patch target/linux/ramips/patches-5.4
+	;;
+	*)
+		Replace_File CustomFiles/system_common package/base-files/files/etc/config system
+	;;
+	esac
 }
