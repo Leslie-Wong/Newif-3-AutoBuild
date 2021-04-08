@@ -228,7 +228,7 @@ jobs:
       uses: dev-drprasad/delete-older-releases@v0.1.0
       if: env.REMOVE_OLD_RELEASE == 'true' && !cancelled()
       with:
-        keep_latest: 3
+        keep_latest: 10
         delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
@@ -238,4 +238,6 @@ jobs:
       if: env.REMOVE_WORKFLOW_RUNS == 'true' && !cancelled()
       with:
         retain_days: 1
-        keep_minimum_runs: 3
+        keep_minimum_runs: 10
+      env:
+        GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
