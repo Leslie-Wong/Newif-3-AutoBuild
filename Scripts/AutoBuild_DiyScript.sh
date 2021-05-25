@@ -4,27 +4,29 @@
 # AutoBuild DiyScript
 
 Diy_Core() {
-	uthor=LesLie.W
-	Default_Device=d-team_newifi-d2
+	Author=LesLie.W
+	Default_Device=Newifi-D2
+	Short_Firmware_Date=true
+	Default_IP_Address=192.168.10.1
 
-	INCLUDE_AutoUpdate=true
+	INCLUDE_AutoUpdate=false
 	INCLUDE_AutoBuild_Tools=true
-	INCLUDE_DRM_I915=true
-	INCLUDE_Obsolete_PKG_Compatible=
+	INCLUDE_DRM_I915=false
+	INCLUDE_Theme_Argon=true
+	INCLUDE_Obsolete_PKG_Compatible=false
+	
+	Upload_VM_Firmware=false
 }
 
 Firmware-Diy() {
-	Update_Makefile exfat package/kernel/exfat
-	Replace_File CustomFiles/webadmin.po package/lean/luci-app-webadmin/po/zh-cn
+	Update_Makefile exfat $(PKG_Finder d package exfat)
+	AddPackage svn ../feeds/packages/admin netdata openwrt/packages/trunk/admin
 
 	case ${TARGET_PROFILE} in
 	d-team_newifi-d2)
 		Replace_File CustomFiles/mac80211.sh package/kernel/mac80211/files/lib/wifi
-		Replace_File CustomFiles/system_newifi-d2 package/base-files/files/etc/config system
-		Replace_File CustomFiles/Patches/102-mt7621-fix-cpu-clk-add-clkdev.patch target/linux/ramips/patches-5.4
-	;;
-	*)
-		Replace_File CustomFiles/system_common package/base-files/files/etc/config system
+		Replace_File CustomFiles/system_d-team_newifi-d2 package/base-files/files/etc/config system
+		# Replace_File CustomFiles/Patches/102-mt7621-fix-cpu-clk-add-clkdev.patch target/linux/ramips/patches-5.4
 	;;
 	esac
 }
