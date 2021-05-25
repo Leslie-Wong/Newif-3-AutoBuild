@@ -93,7 +93,7 @@ jobs:
       run: |
         git clone -b $REPO_BRANCH $REPO_URL openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-        [ -f Configs/$CONFIG_FILE ] && cp Configs/$CONFIG_FILE openwrt/.config || {
+        [ -f $CONFIG_FILE ] && cp $CONFIG_FILE openwrt/.config || {
             echo "未检测到该设备的 $CONFIG_FILE 配置文件!"
             exit 1
         }
