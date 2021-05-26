@@ -40,7 +40,6 @@ env:
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config
-  ##CUSTOM_SCRIPT: ./Scripts/diy-script.sh
   DIY_SCRIPT: Scripts/AutoBuild_DiyScript.sh
   FUNCTION_SCRIPT: Scripts/AutoBuild_Function.sh
   DIY_P1_SH: ./Scripts/diy-part1.sh
@@ -66,37 +65,43 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        sudo -E apt-get update
-        sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 python2.7 unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler g++-multilib antlr3 gperf wget curl swig rsync
-        sudo timedatectl set-timezone "Asia/Shanghai"
-        sudo mkdir -p /workdir
-        sudo chown $USER:$GROUPS /workdir
-        echo "Compile_Date=$(date +%Y%m%d%H%M)" > $GITHUB_WORKSPACE/Openwrt.info
-        echo "Display_Date=$(date +%Y/%m/%d)" >> $GITHUB_WORKSPACE/Openwrt.info
-        echo "Defined_IP_Address=${{ github.event.inputs.ip_addr }}" >> $GITHUB_WORKSPACE/Openwrt.info
-        echo "Artifacts_Date=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
-        touch update_log.txt
-        
-    - name: Remove useless files
-      if: env.REMOVE_USELESS_FILES == 'true' && !cancelled()
-      run: |
         echo "Deleting useless files, please wait ..."
         docker rmi `docker images -q`
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo rm -rf \
           /usr/share/dotnet \
           /etc/mysql \
           /etc/php
+        sudo -E apt-get -y purge \
+          azure-cli \
+          ghc* \
+          zulu* \
+          hhvm \
+          llvm* \
+          firefox \
+          google* \
+          dotnet* \
+          powershell \
+          openjdk* \
+          mysql* \
+          php*
+        sudo -E apt-get update
+        sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 python2.7 unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler g++-multilib antlr3 gperf wget curl swig rsync
         sudo -E apt-get -y autoremove --purge
         sudo -E apt-get clean
-        
+        sudo timedatectl set-timezone "Asia/Shanghai"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+        echo "Compile_Date=$(date +%Y%m%d)" > $GITHUB_WORKSPACE/Openwrt.info
+        echo "Display_Date=$(date +'%Y/%m/%d')" >> $GITHUB_WORKSPACE/Openwrt.info
+        echo "## $(date +"%Y%m%d")-$CONFIG_FILE" > update_log.txt
+        echo "Defined_IP_Address=${{ github.event.inputs.ip_addr }}" >> $GITHUB_WORKSPACE/Openwrt.info
+        echo "Artifacts_Date=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
+
     - name: Clone source code
       run: |
         git clone -b $REPO_BRANCH $REPO_URL openwrt
         ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
-        [ -f $CONFIG_FILE ] && cp $CONFIG_FILE openwrt/.config || {
-            echo "未检测到该设备的 $CONFIG_FILE 配置文件!"
-            exit 1
-        }
   
     - name: Load custom feeds
       run: |
@@ -104,23 +109,25 @@ jobs:
         chmod +x $GITHUB_WORKSPACE/$DIY_P1_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P1_SH
-        
+
     - name: Update & Install all feeds
       run: |
         cd openwrt
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        make defconfig
-        
-    - name: Run Custom Firmware-Diy Scripts
+
+    - name: Run [Firmware-Diy] Scripts
       run: |
         chmod +x $DIY_SCRIPT
         chmod +x $FUNCTION_SCRIPT
+        [ -f $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
         cd openwrt
         source $GITHUB_WORKSPACE/$DIY_SCRIPT
         source $GITHUB_WORKSPACE/$FUNCTION_SCRIPT && Firmware-Diy_Base
         Firmware-Diy
-        
+        echo "Compile_Date=$(date +%Y%m%d)" > $GITHUB_WORKSPACE/Openwrt.info
+        echo "Display_Date=$(date +'%Y/%m/%d')" >> $GITHUB_WORKSPACE/Openwrt.info
+
     - name: SSH connection to Actions
       uses: P3TERX/ssh2actions@v1.0.0
       if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
@@ -128,34 +135,26 @@ jobs:
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
-    - name: Preload
+    - name: Download Packages
       run: |
-        cp $CONFIG_FILE openwrt/.config
         cd openwrt
         ./scripts/feeds update -a
         ./scripts/feeds install -a
         make defconfig
-        make download -j$(nproc)
+        make download -j$(nproc) V=s
+        find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
     
     - name: Add Custom Settings
       run: |
         cp -rf settings/* ./openwrt/
-        
-    - name: free space
-      run: |
-        sudo rm -rf /usr/share/dotnet
-        sudo rm -rf /opt/ghc
-        sudo rm -rf "/usr/local/share/boost"
-        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-        
+
     - name: Compile the Openwrt
       run: |
         cd openwrt
-        echo "Start to compile OpenWrt ..."
         make -j$(nproc) || make -j1 V=s
         echo "FILE_DATE=_$(date +"%Y%m%d_%H%M")" >> $GITHUB_ENV
-        
+
     - name: Process the AutoBuild Firmware
       run: |
         cd openwrt
@@ -190,10 +189,11 @@ jobs:
       if: env.UPLOAD_WETRANSFER == 'true' && !cancelled()
       run: |
         curl -fsSL git.io/file-transfer | sh
-        ./transfer wet -s -p 16 --no-progress ${UPLOADFILES} 2>&1 | tee wetransfer.log
+        ./transfer wet -s -p 16 --no-progress openwrt/bin/${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }} 2>&1 | tee wetransfer.log
         #./transfer wet -s -p 16 --no-progress openwrt/newifi-3-AutoBuild${{ env.FILE_DATE }}.tar.gz 2>&1 | tee wetransfer.log
         echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
         echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
+
     - name: Generate release tag
       id: tag
       if: env.UPLOAD_RELEASE == 'true' && !cancelled()
@@ -208,8 +208,8 @@ jobs:
       uses: actions/upload-artifact@main
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       with:
-        name: ${{ env.UPLOAD_RELEASE_NAME }}_{{ env.Artifacts_DATE }}
-        path: openwrt/bin/Firmware
+        name: ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        path: openwrt/bin
         
     - name: Upload bin directory to Artifacts
       uses: actions/upload-artifact@main
@@ -233,7 +233,7 @@ jobs:
       uses: dev-drprasad/delete-older-releases@v0.1.0
       if: env.REMOVE_OLD_RELEASE == 'true' && !cancelled()
       with:
-        keep_latest: 10
+        keep_latest: 23
         delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
@@ -243,4 +243,4 @@ jobs:
       if: env.REMOVE_WORKFLOW_RUNS == 'true' && !cancelled()
       with:
         retain_days: 31
-        keep_minimum_runs: 10
+        keep_minimum_runs: 23
