@@ -226,7 +226,7 @@ jobs:
       with:
         tag_name: ${{ env.UPLOAD_RELEASE_NAME }}
         body_path: update_log.txt
-        files: openwrt/bin/Firmware/*
+        files: openwrt/bin/*
         
     
     - name: Remove old Release
