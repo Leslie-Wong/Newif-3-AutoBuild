@@ -136,6 +136,7 @@ jobs:
         ./scripts/feeds install -a
         make defconfig
         make download -j$(nproc)
+        find dl -size -1024c -exec rm -f {} \;
     
     - name: Add Custom Settings
       run: |
