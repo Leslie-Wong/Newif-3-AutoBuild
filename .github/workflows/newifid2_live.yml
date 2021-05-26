@@ -31,13 +31,15 @@ on:
         description: 'SSH connection to Actions'
         required: false
         default: 'false'
+      ip_addr:
+        description: '固件 IP 地址 [可选]'
+        default: ''
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: .config_live
-  ##CUSTOM_SCRIPT: ./Scripts/diy-script.sh
   DIY_SCRIPT: Scripts/AutoBuild_DiyScript.sh
   FUNCTION_SCRIPT: Scripts/AutoBuild_Function.sh
   DIY_P1_SH: ./Scripts/diy-part1.sh
@@ -65,6 +67,7 @@ jobs:
       run: |
         echo "Deleting useless files, please wait ..."
         docker rmi `docker images -q`
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo rm -rf \
           /usr/share/dotnet \
           /etc/mysql \
@@ -92,7 +95,8 @@ jobs:
         echo "Compile_Date=$(date +%Y%m%d)" > $GITHUB_WORKSPACE/Openwrt.info
         echo "Display_Date=$(date +'%Y/%m/%d')" >> $GITHUB_WORKSPACE/Openwrt.info
         echo "## $(date +"%Y%m%d")-$CONFIG_FILE" > update_log.txt
-        echo "Artifacts_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+        echo "Defined_IP_Address=${{ github.event.inputs.ip_addr }}" >> $GITHUB_WORKSPACE/Openwrt.info
+        echo "Artifacts_Date=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
 
     - name: Clone source code
       run: |
@@ -138,6 +142,7 @@ jobs:
         ./scripts/feeds install -a
         make defconfig
         make download -j$(nproc) V=s
+        find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
     
     - name: Add Custom Settings
@@ -184,7 +189,7 @@ jobs:
       if: env.UPLOAD_WETRANSFER == 'true' && !cancelled()
       run: |
         curl -fsSL git.io/file-transfer | sh
-        ./transfer wet -s -p 16 --no-progress ${UPLOADFILES} 2>&1 | tee wetransfer.log
+        ./transfer wet -s -p 16 --no-progress openwrt/bin/${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }} 2>&1 | tee wetransfer.log
         #./transfer wet -s -p 16 --no-progress openwrt/newifi-3-AutoBuild${{ env.FILE_DATE }}.tar.gz 2>&1 | tee wetransfer.log
         echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
         echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
@@ -203,8 +208,8 @@ jobs:
       uses: actions/upload-artifact@main
       if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       with:
-        name: ${{ env.UPLOAD_RELEASE_NAME }}_{{ env.Artifacts_DATE }}
-        path: openwrt/bin/Firmware
+        name: ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        path: openwrt/bin
         
     - name: Upload bin directory to Artifacts
       uses: actions/upload-artifact@main
@@ -228,7 +233,7 @@ jobs:
       uses: dev-drprasad/delete-older-releases@v0.1.0
       if: env.REMOVE_OLD_RELEASE == 'true' && !cancelled()
       with:
-        keep_latest: 23
+        keep_latest: 5
         delete_tags: true
       env:
         GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
@@ -237,7 +242,5 @@ jobs:
       uses: GitRML/delete-workflow-runs@main
       if: env.REMOVE_WORKFLOW_RUNS == 'true' && !cancelled()
       with:
-        retain_days: 31
-        keep_minimum_runs: 23
-      env:
-        GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        retain_days: 11
+        keep_minimum_runs: 10
