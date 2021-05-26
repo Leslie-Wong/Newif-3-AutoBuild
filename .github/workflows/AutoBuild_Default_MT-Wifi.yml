@@ -1,0 +1,246 @@
+#=======================================================
+# Description: Build OpenWrt using GitHub Actions
+# https://github.com/Hyy2001X/AutoBuild-Actions
+# Lisence: MIT
+# Author: P3TERX
+# Modify: Hyy2001X
+#=======================================================
+
+name: Build Newifi-3_Default_MT-Wifi
+
+on: 
+#  release:
+#    types: [published]
+
+#  push:
+#    branches:
+#      - main
+#    paths:
+#      - '.config'
+
+  schedule:
+    - cron: 0 0 * * *
+  
+  watch:
+    types: [started]
+  
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      ssh:
+        description: 'SSH connection to Actions'
+        required: false
+        default: 'false'
+      ip_addr:
+        description: '固件 IP 地址 [可选]'
+        default: ''
+
+env:
+  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_BRANCH: master
+  FEEDS_CONF: feeds.conf.default
+  CONFIG_FILE: backup-mtwifi.config
+  DIY_SCRIPT: Scripts/AutoBuild_DiyScript.sh
+  FUNCTION_SCRIPT: Scripts/AutoBuild_Function.sh
+  DIY_P1_SH: ./Scripts/diy-part1.sh
+  TZ: Asia/Shanghai
+  UPLOAD_RELEASE: true
+  UPLOAD_FIRMWARE: true
+  UPLOAD_BIN_DIR: false
+  UPLOAD_COWTRANSFER: true
+  UPLOAD_WETRANSFER: true
+  UPLOAD_RELEASE_NAME: Newifi-3_Default_MT-Wifi
+  REMOVE_OLD_RELEASE: true
+  REMOVE_WORKFLOW_RUNS: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Initialization Environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        echo "Deleting useless files, please wait ..."
+        docker rmi `docker images -q`
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo rm -rf \
+          /usr/share/dotnet \
+          /etc/mysql \
+          /etc/php
+        sudo -E apt-get -y purge \
+          azure-cli \
+          ghc* \
+          zulu* \
+          hhvm \
+          llvm* \
+          firefox \
+          google* \
+          dotnet* \
+          powershell \
+          openjdk* \
+          mysql* \
+          php*
+        sudo -E apt-get update
+        sudo -E apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 python2.7 unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler g++-multilib antlr3 gperf wget curl swig rsync
+        sudo -E apt-get -y autoremove --purge
+        sudo -E apt-get clean
+        sudo timedatectl set-timezone "Asia/Shanghai"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+        echo "Compile_Date=$(date +%Y%m%d)" > $GITHUB_WORKSPACE/Openwrt.info
+        echo "Display_Date=$(date +'%Y/%m/%d')" >> $GITHUB_WORKSPACE/Openwrt.info
+        echo "## $(date +"%Y%m%d")-$CONFIG_FILE" > update_log.txt
+        echo "Defined_IP_Address=${{ github.event.inputs.ip_addr }}" >> $GITHUB_WORKSPACE/Openwrt.info
+        echo "Artifacts_Date=$(date +%Y%m%d%H%M)" >> $GITHUB_ENV
+
+    - name: Clone source code
+      run: |
+        git clone -b $REPO_BRANCH $REPO_URL openwrt
+        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+  
+    - name: Load custom feeds
+      run: |
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+        chmod +x $GITHUB_WORKSPACE/$DIY_P1_SH
+        cd openwrt
+        $GITHUB_WORKSPACE/$DIY_P1_SH
+
+    - name: Update & Install all feeds
+      run: |
+        cd openwrt
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+
+    - name: Run [Firmware-Diy] Scripts
+      run: |
+        chmod +x $DIY_SCRIPT
+        chmod +x $FUNCTION_SCRIPT
+        [ -f $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        cd openwrt
+        source $GITHUB_WORKSPACE/$DIY_SCRIPT
+        source $GITHUB_WORKSPACE/$FUNCTION_SCRIPT && Firmware-Diy_Base
+        Firmware-Diy
+        echo "Compile_Date=$(date +%Y%m%d)" > $GITHUB_WORKSPACE/Openwrt.info
+        echo "Display_Date=$(date +'%Y/%m/%d')" >> $GITHUB_WORKSPACE/Openwrt.info
+
+    - name: SSH connection to Actions
+      uses: P3TERX/ssh2actions@v1.0.0
+      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
+      env:
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+
+    - name: Download Packages
+      run: |
+        cd openwrt
+        ./scripts/feeds update -a
+        ./scripts/feeds install -a
+        make defconfig
+        make download -j$(nproc) V=s
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+    
+    - name: Add Custom Settings
+      run: |
+        cp -rf settings/* ./openwrt/
+
+    - name: Compile the Openwrt
+      run: |
+        cd openwrt
+        make -j$(nproc) || make -j1 V=s
+        echo "FILE_DATE=_$(date +"%Y%m%d_%H%M")" >> $GITHUB_ENV
+
+    - name: Process the AutoBuild Firmware
+      run: |
+        cd openwrt
+        source $GITHUB_WORKSPACE/$DIY_SCRIPT
+        source $GITHUB_WORKSPACE/$FUNCTION_SCRIPT && PS_Firmware
+        
+    - name: Zip files
+      run: |
+        cd openwrt/bin
+        mkdir ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        tar -zcvf ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}/packages.tar.gz packages
+        # tar -zcvf newifi3${{ env.FILE_DATE }}/targets.tar.gz targets
+        # cp -rf packages ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        cp -rf targets ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        cd ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        echo "UPLOADFILES=$PWD" >> $GITHUB_ENV
+        
+    - name: Upload firmware to cowtransfer
+      id: cowtransfer
+      if: env.UPLOAD_COWTRANSFER == 'true' && !cancelled()
+      run: |
+        ls -hl
+        echo ${FIRMWARE}
+        curl -fsSL git.io/file-transfer | sh
+        #./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/newifi3${{ env.FILE_DATE }} 2>&1 | tee cowtransfer.log
+        ./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/bin/${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }} 2>&1 | tee cowtransfer.log
+        echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
+        echo "::set-output name=url::$(cat cowtransfer.log | grep https | cut -f3 -d" ")"
+        
+    - name: Upload firmware to WeTransfer
+      id: wetransfer
+      if: env.UPLOAD_WETRANSFER == 'true' && !cancelled()
+      run: |
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer wet -s -p 16 --no-progress openwrt/bin/${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }} 2>&1 | tee wetransfer.log
+        #./transfer wet -s -p 16 --no-progress openwrt/newifi-3-AutoBuild${{ env.FILE_DATE }}.tar.gz 2>&1 | tee wetransfer.log
+        echo "::warning file=wetransfer.com::$(cat wetransfer.log | grep https)"
+        echo "::set-output name=url::$(cat wetransfer.log | grep https | cut -f3 -d" ")"
+
+    - name: Generate release tag
+      id: tag
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      run: |
+        echo "::set-output name=release_tag::${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}"
+        touch release.txt
+        [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
+        [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
+        echo "::set-output name=status::success"
+        
+    - name: Upload AutoBuild Firmware to Artifacts
+      uses: actions/upload-artifact@main
+      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      with:
+        name: ${{ env.UPLOAD_RELEASE_NAME }}${{ env.FILE_DATE }}
+        path: openwrt/bin
+        
+    - name: Upload bin directory to Artifacts
+      uses: actions/upload-artifact@main
+      if: env.UPLOAD_BIN_DIR == 'true' && !cancelled()
+      with:
+        name: ${{ env.UPLOAD_RELEASE_NAME }}_${{ env.Artifacts_DATE }}
+        path: openwrt/bin
+
+    - name: Upload AutoBuild Firmware to Release
+      uses: softprops/action-gh-release@v1
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.UPLOAD_RELEASE_NAME }}
+        body_path: update_log.txt
+        files: openwrt/bin/*
+        
+    
+    - name: Remove old Release
+      uses: dev-drprasad/delete-older-releases@v0.1.0
+      if: env.REMOVE_OLD_RELEASE == 'true' && !cancelled()
+      with:
+        keep_latest: 5
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        
+    - name: Remove workflow runs
+      uses: GitRML/delete-workflow-runs@main
+      if: env.REMOVE_WORKFLOW_RUNS == 'true' && !cancelled()
+      with:
+        retain_days: 11
+        keep_minimum_runs: 10
